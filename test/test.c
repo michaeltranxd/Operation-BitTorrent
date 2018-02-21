@@ -9,7 +9,6 @@
 int main(){
 
 	printf("Hello World");
-	printf("This is second change");
 
 	return 0;
 }
