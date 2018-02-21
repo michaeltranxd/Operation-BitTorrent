@@ -5,7 +5,7 @@
 Hello, this is operation bittorrent
 
 ## Goals
-- [x] Familiarize with github
+- [ ] Familiarize with github
 - [x] Edit readme
 - [x] Allow group members to access this
 - [ ] Learn how to network
