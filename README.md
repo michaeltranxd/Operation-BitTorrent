@@ -5,10 +5,11 @@
 Hello, this is operation bittorrent
 
 ## Goals
-- [ ] Finish readme
-- [ ] Allow group members to access this
+- [x] Familiarize with github
+- [x] Edit readme
+- [x] Allow group members to access this
 - [ ] Learn how to network
-- [ ] Get some features
+- [ ] Get some features working
 
 ## Features
 
