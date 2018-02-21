@@ -1,5 +1,7 @@
 # Operation-BitTorrent
 
+#### CS 296 Project Spring 2018
+
 Hello, this is operation bittorrent
 
 ## Goals
@@ -23,4 +25,3 @@ Hello, this is operation bittorrent
 - Get familiar with our idea
 
 
-CS 296 Project Spring 2018
