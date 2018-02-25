@@ -5,7 +5,6 @@
 Hello, this is operation bittorrent. This project is aimed to learn about P2P(peer to peer) file sharing. We will be using the language C to implement this and try to add more features after getting a working copy of P2P file sharing.
 
 ## Past Goals
-- [x] Familiarize with github
 - [x] Edit readme
 - [x] Allow group members to access this
 
@@ -13,6 +12,7 @@ Hello, this is operation bittorrent. This project is aimed to learn about P2P(pe
 - [ ] Learn how to network
 - [ ] Get a server that can send and clients can receive
 - [ ] Get main feature working
+- [ ] Familiarize with github
 
 ## To Do Timeline (Finish by Date)
 
