@@ -22,14 +22,6 @@ Hello, this is operation bittorrent. This project is aimed to learn about P2P(pe
 #### 2/24/18
 - [ ] Learn about [networking](http://beej.us/guide/bgnet/)
 - [x] Get familiar with our idea
-=======
-- [ ] Get some features working
-
-## Timeline
-
-#### 2/24/18
-- [ ] Learn about [networking](http://beej.us/guide/bgnet/)
-- [x] Get familiar with our idea
  
 #### 3/7/18
 - [ ] Get a demo for a working server
