@@ -15,7 +15,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 
-#define PORT "3490"							// the port users will be connecting to
+//#define PORT "3490"							// the port users will be connecting to
 
 #define BACKLOG 10 							// how many pending connections queue will hold
 
@@ -36,7 +36,7 @@ void* get_in_addr(struct sockaddr* sa){
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int main(void){
+int main(int argc, char* argv[]){
 	int sockfd, new_fd;						// listen on sock_fd, new connection on new_fd
 	struct addrinfo hints, *servinfo, *p;
 	struct sockaddr_storage their_addr;		// connectors' address information
@@ -46,12 +46,17 @@ int main(void){
 	char s[INET6_ADDRSTRLEN];
 	int rv;
 
+	if(argc != 2){
+		fprintf(stderr, "usage: server port\n");
+		exit(1);
+	}
+
 	memset(&hints, 0, sizeof hints); 		// Make sure struct has nothing inside of it
 	hints.ai_family = AF_UNSPEC;			// Dont care which version for ip
 	hints.ai_socktype = SOCK_STREAM;		// TCP connection
 	hints.ai_flags = AI_PASSIVE;			// use my ip
 
-	if((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0){
+	if((rv = getaddrinfo(NULL, argv[1], &hints, &servinfo)) != 0){
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
 	}
