@@ -9,7 +9,7 @@ int send_file(char* filename, int new_fd){
 	FILE* fp = fopen(filename, "r");
 	if (!fp) {
 		printf("Fail to open file %s\n", filename);
-		return -1;
+		exit(0);
 	}
 	
 	int total_bytes_send = 0;
@@ -20,8 +20,10 @@ int send_file(char* filename, int new_fd){
 
 		if (bytes_read > 0) {
 			printf("Successfully read %d bytes, now send \n", bytes_read);
-			if (write(new_fd, buff, bytes_read) == -1)
+			if (write(new_fd, buff, bytes_read) == -1){
 				printf("Error writing to new_fd %d\n", new_fd);
+				exit(0);
+			}
 			total_bytes_send += bytes_read;
 		}
 
@@ -32,12 +34,13 @@ int send_file(char* filename, int new_fd){
 
 		if (ferror(fp)) {
 			printf("Error reading file, total_bytes_send is %d\n", total_bytes_send);
-			break;
+			exit(0);
 		}
 	}
 	fclose(fp);
 	return total_bytes_send;
 }
+
 
 
 
@@ -50,15 +53,15 @@ int recv_file(char* filename, int sockfd) {
 	while (1) {
 		bytes_recv = read(sockfd, buff, 256);
 		if (bytes_recv < 0) {
-			printf("Read error\n");
-			break;
+			perror("Read error\n");
+			fclose(fp);
+			exit(0);
 		}
 		else if(bytes_recv > 0){
 			printf("Successfully receive %d bytes\n", bytes_recv);
-			printf("string: %s \n", buff);
 			fwrite(buff, sizeof(char), bytes_recv, fp);
-			fflush(fp);
 			total_bytes_recv += bytes_recv;
+			fflush(fp);
 		}
 	}
 	fclose(fp);
