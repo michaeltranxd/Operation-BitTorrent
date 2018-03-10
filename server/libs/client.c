@@ -2,6 +2,10 @@
  *	client.c -- a stream socket client demo
  */
 
+#include "client.h"
+#include "utils.h"
+#include "file_transfer.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -14,34 +18,30 @@
 
 #include <arpa/inet.h>
 
+
 //#define PORT "3490" // the port client will be connecting to
+
+#define FILENAME "testget.txt"
 
 #define MAXDATASIZE 100 // max number of bytes we can get at once
 
-// get sockaddr, IPv4 or IPv6
-void* get_in_addr(struct sockaddr* sa){
-	if(sa->sa_family == AF_INET)
-		return &(((struct sockaddr_in*)sa)->sin_addr);
-	return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
-
-int main(int argc, char* argv[]){
+int client(char* hostname, char* port){
 	int sockfd, numbytes;
 	char buf[MAXDATASIZE];
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
 	char s[INET6_ADDRSTRLEN];
 
-	if(argc != 3){
+	if(hostname == NULL || port == NULL){
 		fprintf(stderr, "usage: client hostname port\n");
-		exit(1);
+		return 1;
 	}
 
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	if((rv = getaddrinfo(argv[1], argv[2], &hints, &servinfo)) != 0){
+	if((rv = getaddrinfo(hostname, port, &hints, &servinfo)) != 0){
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
 	}
@@ -63,7 +63,7 @@ int main(int argc, char* argv[]){
 	}
 
 	if(p == NULL){
-		fprintf(stderr, "client: failted to connect\n");
+		fprintf(stderr, "client: failed to connect\n");
 		return 2;
 	}
 
@@ -72,9 +72,9 @@ int main(int argc, char* argv[]){
 
 	freeaddrinfo(servinfo);						// all done with this structure
 
-	if((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1){
+	if((numbytes = recv_file(FILENAME, sockfd)) == -1){
 		perror("recv");
-		exit(1);
+		return 1;
 	}
 
 	buf[numbytes] = '\0';
