@@ -1,3 +1,10 @@
+
+#include "file_transfer.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
 int send_file(char* filename, int new_fd){
 	FILE* fp = fopen(filename, "r");
 	if (!fp) {
@@ -38,7 +45,7 @@ int send_file(char* filename, int new_fd){
 
 
 int recv_file(char* filename, int sockfd) {
-	FILE* fp = fopen(filename, "a");
+	FILE* fp = fopen(filename, "a+");
 	unsigned char buff[256];
 	memset(buff, '\0', sizeof(buff));
 	int bytes_recv = 0;
@@ -50,10 +57,11 @@ int recv_file(char* filename, int sockfd) {
 			fclose(fp);
 			exit(0);
 		}
-		else {
+		else if(bytes_recv > 0){
 			printf("Successfully receive %d bytes\n", bytes_recv);
 			fwrite(buff, sizeof(char), bytes_recv, fp);
 			total_bytes_recv += bytes_recv;
+			fflush(fp);
 		}
 	}
 	fclose(fp);
