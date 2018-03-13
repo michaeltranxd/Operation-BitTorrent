@@ -54,14 +54,14 @@ int recv_file(char* filename, int sockfd) {
 	while (1) {
 		bytes_recv = read(sockfd, buff, MAXDATASIZE);
 		if (bytes_recv < 0) {
-			perror("Error reading from sockfd%d\n", sockfd);
+			printf("Error reading from sockfd%d\n", sockfd);
 			fclose(fp);
 			exit(0);
 		}
 		else if(bytes_recv > 0){
 			printf("Successfully receive %d bytes\n", bytes_recv);
-			if (fwrite(buff, sizeof(char), bytes_recv, fp) < bytes_recv) {
-				perror("fwrite() ends before writing %d (bytes_recv) bytes\n", bytes_recv);
+			if (fwrite(buff, sizeof(char), bytes_recv, fp) < (unsigned)bytes_recv) {
+				printf("fwrite() ends before writing %d (bytes_recv) bytes\n", bytes_recv);
 				fclose(fp);
 				exit(0);
 			}
