@@ -8,14 +8,15 @@ Hello, this is operation bittorrent. This project is aimed to learn about P2P(pe
 ## Past Goals
 - [x] Edit readme
 - [x] Allow group members to access this
-
-## Goals
-- [x] Edit readme
-- [x] Allow group members to access this
+- [x] Familiarize with github
 - [x] Learn how to network
 - [x] Get a server that can send and clients can receive
+
+## Goals
 - [ ] Get main feature working
-- [ ] Familiarize with github
+- [ ] Research about [p2p protocols](https://www.google.com/search?q=p2p+protocol&ie=utf-8&oe=utf-8&client=firefox-b-1)
+- [ ] Look into [mmap](http://man7.org/linux/man-pages/man2/mmap.2.html)
+- [ ] Develop Protocol
 
 ## To Do Timeline (Finish by Date)
 
@@ -26,11 +27,12 @@ Hello, this is operation bittorrent. This project is aimed to learn about P2P(pe
 #### 3/7/18
 - [x] Get a demo for a working server
 - [x] Server should be able to send messages and clients can receive
-- [ ] Possibly threaded server
-- [ ] Research about [p2p protocols](https://www.google.com/search?q=p2p+protocol&ie=utf-8&oe=utf-8&client=firefox-b-1)
-- [ ] Look into [mmap](http://man7.org/linux/man-pages/man2/mmap.2.html)
+- [x] Possibly threaded server
 
 #### 3/14/18
+- [x] Multi-Threading for client and server
+- [x] Be able to send a file over the network
+- [ ] Develop Protocol
  
 #### 3/21/18
  
