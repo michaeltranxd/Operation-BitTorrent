@@ -21,19 +21,16 @@
 
 //#define PORT "3490" // the port client will be connecting to
 
-#define FILENAME "testget.txt"
-
-#define MAXDATASIZE 100 // max number of bytes we can get at once
+#define FILENAME "testget.txt" // hard coded filename to receive
 
 int client(char* hostname, char* port){
 	int sockfd, numbytes;
-	char buf[MAXDATASIZE];
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
 	char s[INET6_ADDRSTRLEN];
 
 	if(hostname == NULL || port == NULL){
-		fprintf(stderr, "usage: client hostname port\n");
+		fprintf(stderr, "usage: hostname port\n");
 		return 1;
 	}
 
@@ -77,9 +74,7 @@ int client(char* hostname, char* port){
 		return 1;
 	}
 
-	buf[numbytes] = '\0';
-
-	printf("client: received '%s'\n", buf);
+	printf("client: Finished downloading!\n");
 
 	close(sockfd);
 
