@@ -6,8 +6,9 @@
 #include <unistd.h>
 
 #define MAXDATASIZE 256	// max number of bytes we can get at once
+// consider increasing the size limit, read https://en.wikipedia.org/wiki/Maximum_transmission_unit
 
-int send_file(char* filename, int new_fd){
+int send_file(char* filename, int sockfd){
 	FILE* fp = fopen(filename, "r");
 	if (!fp) {
 		printf("Fail to open file %s\n", filename);
@@ -16,14 +17,14 @@ int send_file(char* filename, int new_fd){
 	
 	int total_bytes_send = 0;
 	while (1) {
-		unsigned char buff[MAXDATASIZE] = {0};
+		unsigned char buff[MAXDATASIZE];
 		memset(buff, '\0', sizeof(buff));
 		int bytes_read = fread(buff, sizeof(char), MAXDATASIZE, fp);
 
 		if (bytes_read > 0) {
 			printf("Successfully read %d bytes, now send \n", bytes_read);
-			if (write(new_fd, buff, bytes_read) == -1){
-				printf("Error writing to new_fd %d\n", new_fd);
+			if (write(sockfd, buff, bytes_read) == -1){
+				printf("Error writing to sockfd %d\n", sockfd);
 				exit(0);
 			}
 			total_bytes_send += bytes_read;
@@ -53,18 +54,22 @@ int recv_file(char* filename, int sockfd) {
 	while (1) {
 		bytes_recv = read(sockfd, buff, MAXDATASIZE);
 		if (bytes_recv < 0) {
-			perror("Read error\n");
+			perror("Error reading from sockfd%d\n", sockfd);
 			fclose(fp);
 			exit(0);
 		}
 		else if(bytes_recv > 0){
 			printf("Successfully receive %d bytes\n", bytes_recv);
-			fwrite(buff, sizeof(char), bytes_recv, fp);
+			if (fwrite(buff, sizeof(char), bytes_recv, fp) < bytes_recv) {
+				perror("fwrite() ends before writing %d (bytes_recv) bytes\n", bytes_recv);
+				fclose(fp);
+				exit(0);
+			}
 			total_bytes_recv += bytes_recv;
 			fflush(fp);
 		}
 		else if(bytes_recv == 0){
-			// end of file
+			//printf ("Reach of file, bytes_recv == 0\n");
 			break;
 		}
 	}
