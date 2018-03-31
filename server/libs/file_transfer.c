@@ -4,53 +4,131 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <assert.h>
+
+//#define SEGMENT_COUNT 4
 
 #define MAXDATASIZE 256	// max number of bytes we can get at once
 // consider increasing the size limit, read https://en.wikipedia.org/wiki/Maximum_transmission_unit
 
-int send_file(char* filename, int sockfd){
-	FILE* fp = fopen(filename, "r");
-	if (!fp) {
-		printf("Fail to open file %s\n", filename);
-		exit(0);
+static long file_size(char *filename) {
+	FILE *fp = fopen(filename, "rb");
+	if (fp == -1) {
+		printf("fopen()\n");
+		return -1;
 	}
-	
-	int total_bytes_send = 0;
-	while (1) {
-		unsigned char buff[MAXDATASIZE];
-		memset(buff, '\0', sizeof(buff));
-		int bytes_read = fread(buff, sizeof(char), MAXDATASIZE, fp);
 
-		if (bytes_read > 0) {
-			printf("Successfully read %d bytes, now send \n", bytes_read);
-			if (write(sockfd, buff, bytes_read) == -1){
-				printf("Error writing to sockfd %d\n", sockfd);
-				exit(0);
-			}
-			total_bytes_send += bytes_read;
-		}
-
-		if (feof(fp)) {
-			printf("Reach end of file, total_bytes_send is %d\n", total_bytes_send);
-			break;
-		}
-
-		if (ferror(fp)) {
-			printf("Error reading file, total_bytes_send is %d\n", total_bytes_send);
-			exit(0);
-		}
-	}
+	long size = 0;
+	fseek(fp, 0, SEEK_END);
+	size = ftell(fp) + 1;
 	fclose(fp);
-	return total_bytes_send;
+
+	return size;
+
 }
 
 
-int recv_file(char* filename, int sockfd) {
-	FILE* fp = fopen(filename, "a+");
+
+ssize_t send_file(char* filename, int sockfd, int file_index, int file_size){
+	if (file_index == 0) {
+		FILE* fp = fopen(filename, "r");
+		if (!fp) {
+			printf("Fail to open file %s\n", filename);
+			exit(0);
+		}
+		
+		int total_bytes_send = 0;
+		while (1) {
+			unsigned char buff[MAXDATASIZE];
+			memset(buff, '\0', sizeof(buff));
+			int bytes_read = fread(buff, sizeof(char), MAXDATASIZE, fp);
+
+			if (bytes_read > 0) {
+				printf("Successfully read %d bytes, now send \n", bytes_read);
+				if (write(sockfd, buff, bytes_read) == -1){
+					printf("Error writing to sockfd %d\n", sockfd);
+					exit(0);
+				}
+				total_bytes_send += bytes_read;
+			}
+
+			if (feof(fp)) {
+				printf("Reach end of file, total_bytes_send is %d\n", total_bytes_send);
+				break;
+			}
+
+			if (ferror(fp)) {
+				printf("Error reading file, total_bytes_send is %d\n", total_bytes_send);
+				exit(0);
+			}
+		
+		
+		}
+		
+		fclose(fp);
+		return total_bytes_send;
+	}
+
+	else {
+		int fd = open(filename, O_RDONLY);
+		if (fd == -1) {
+			printf("Error open() file %s\n", filename);
+			exit(0);
+		}
+		struct stat s;
+		fstat(fd, &s);
+		size_t old_size = s.st_size; // original file size of fd
+		
+		size_t extra_size = 0;
+		if (old_size % file_size != 0) extra_size = file_size - (old_size % file_size);
+		size_t new_size = old_size + extra_size; // new file size of fd
+		assert((new_size % file_size) == 0); // make sure new_size is divisible by file_size
+		ftruncate(fd, new_size); // this will append NULL bytes to the end of fd until its size becomes fd_new_size
+
+
+		size_t offset = (file_index - 1) * file_size;
+		void *addr0 = mmap(NULL, new_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+		if (addr0 == MAP_FAILED) {
+			printf("Error mapping file descriptor %d\n", fd);
+			exit(0);
+		}
+		void *addr_at_index = (void *)((char *)addr0 + offset);
+
+		ssize_t total_bytes_read = write(sockfd, addr_at_index, file_size);
+		if (total_bytes_read == -1) {
+			printf("Error writing to sockfd %d\n", sockfd);
+			exit(0);
+		}
+		if (munmap(addr0, new_size) == -1) {
+			printf("Error unmapping\n");
+		}
+
+		close(fd);
+		return total_bytes_read;
+	}
+		
+}
+
+
+ssize_t recv_file(char* base_filename, int sockfd, int file_index, size_t file_size) {
+	FILE *fp;
+	if (file_index != 0) {
+		char filename[256];
+		sprintf(filename, "%s%d", base_filename, file_index);
+		fp = fopen(filename, "w+");
+	}
+	else {
+		fp = fopen(base_filename, "a+");
+	}
+
 	unsigned char buff[MAXDATASIZE];
 	memset(buff, '\0', sizeof(buff));
-	int bytes_recv = 0;
-	int total_bytes_recv = 0;
+	ssize_t bytes_recv = 0;
+	ssize_t total_bytes_recv = 0;
 	while (1) {
 		bytes_recv = read(sockfd, buff, MAXDATASIZE);
 		if (bytes_recv < 0) {
@@ -76,4 +154,8 @@ int recv_file(char* filename, int sockfd) {
 
 	fclose(fp);
 	return total_bytes_recv;
+
+
+
+
 }
