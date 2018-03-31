@@ -4,7 +4,6 @@
 
 #include "client.h"
 #include "utils.h"
-#include "packet.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,10 +69,12 @@ int client(char* hostname, char* port){
 	freeaddrinfo(servinfo);						// all done with this structure
 
 	(void)numbytes;
-
-	if(sendaskforfile(sockfd, FILENAME) == -1)
-		perror("send1");
-
+/*
+	if((numbytes = recv_file(FILENAME, sockfd)) == -1){
+		perror("recv");
+		return 1;
+	}
+*/
 	printf("client: Finished downloading!\n");
 
 	close(sockfd);

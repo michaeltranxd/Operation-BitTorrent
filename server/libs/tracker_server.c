@@ -1,9 +1,10 @@
 /*
- *	server.c -- a stream socket server demo
+ *	tracker_server.c -- a stream socket server demo
  */
 
 #include "server.h"
 #include "utils.h"
+#include "packet.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -118,8 +119,11 @@ int server(int argc, char** argv){
 
 		if(!fork()){						// child process
 			close(sockfd); 					// child doesnt need listener
-//			if(send_file(FILENAME, new_fd) == -1)
-//				perror("send");
+			
+			// block if no data yet
+			if(recvpacket(new_fd) == -1)
+				perror("recv1");
+
 			close(new_fd);
 			exit(0);
 		}
