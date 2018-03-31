@@ -125,6 +125,10 @@ ssize_t recv_file(char* base_filename, int sockfd, int file_index, size_t file_s
 		fp = fopen(base_filename, "a+");
 	}
 
+	if (fp == -1) {
+		printf("Error fopen() base_filename is %s\n", base_filename);
+	}
+
 	unsigned char buff[MAXDATASIZE];
 	memset(buff, '\0', sizeof(buff));
 	ssize_t bytes_recv = 0;
@@ -159,3 +163,119 @@ ssize_t recv_file(char* base_filename, int sockfd, int file_index, size_t file_s
 
 
 }
+
+int* combine_file(char *base_filename, int segment_count) {
+	if (segment_count < 2) return NULL;
+
+	int *ret = (int *) malloc(segment_count * sizeof(int));
+	int ret_itr = 0;
+
+	int index = 1;
+	void *addr[segment_count];
+	size_t segment[segment_count]; // records the size of each segment
+	while (index < (segment_count + 1)) {
+		char indexed_filename[256];
+		sprintf(indexed_filename, "%s%d", base_filename, index);
+		if ( !access(indexed_filename, F_OK) ) {
+			ret[ret_itr] = index;
+			ret_itr ++;
+			addr[index] = NULL;
+		}
+		else {
+			int fd = open(indexed_filename, "r");
+			if (fd == -1) {
+				printf("Error open() indexed_filename %s\n", indexed_filename);
+				close(fd);
+				free(ret);
+				exit(0);
+			}
+			struct stat s;
+			fstat(fd, &s);
+			size_t segment_size = s.st_size;
+			segment[index] = segment_size;
+
+			addr[index] = mmap(NULL, segment_size, PROT_READ, MAP_PRIVATE, fd, 0);
+			if (addr[index] == MAP_FAILED) {
+				printf("Error mmap() fd %d\n", fd);
+				close(fd);
+				free(ret);
+				exit(0);
+			}
+
+			close(fd);
+		}
+	}
+
+	if (ret[0] != NULL) { // at least one segment is missing
+		index = 1;
+		while (index < (segment_count + 1)) {
+			if (addr[index] != NULL) {
+				if (munmap(addr[index], segment[index]) == -1) {
+					printf("Error munmap() addr[%d]\n", index);
+				}
+			}
+		}
+		return ret;
+	}
+	else { // combine all segments
+		int fd_combined = open(base_filename, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
+		if (fd_combined == -1) {
+			printf("Error open() base_filename %s\n", base_filename);
+			free(ret);
+			exit(0);
+		}
+		FILE *fp_combined = fdopen(fd_combined, "a");
+		if (fp_combined == NULL) {
+			printf("Error fdopen() fd_combined %d\n", fd_combined);
+			free(ret);
+			close(fd_combined);
+			exit(0);
+		}
+		index = 1;
+		while (index < (segment_count + 1)) {
+			if (write(fp_combined, addr[index], segment[index] == -1) {
+				printf("Error write() to fp_combined %d, index is %d\n", base_filename, index);
+				free(ret);
+				close(fd_combined);
+				fclose(fp_combined);
+				exit(0);
+			} 
+			if (munmap(addr[index], segment[index]) == -1) {
+				printf("Error munmap() addr[%d]\n", index);
+			}
+		}
+
+		close(fd_combined);
+		fclose(fp_combined);
+		free(ret);
+		return NULL;
+
+	}
+	
+}
+
+size_t* schedule_segment_size (size_t file_size, int segment_count) {
+	size_t *segment = (size_t *) malloc((segment_count + 1) * sizeof(size_t));
+
+	size_t old_size = file_size;
+	size_t page_size = (size_t) sysconf(_SC_PAGESIZE);
+	size_t extra_size = 0;
+	if (old_size % page_size != 0) {
+		extra_size = page_size - (old_size % page_size);
+	}
+	size_t new_size = old_size + extra_size;
+
+	int page_count = new_size / page_size;
+	size_t regular_segment = (page_count / segment_count) * page_size;
+	size_t last_segment = ((page_count / segment_count) + 1) * page_size;
+
+	int itr = 1;
+	segment[0] = 0;
+	while (itr < (segment_count + 1)) {
+		segment[itr] = regular_segment;
+		itr ++;
+	}
+	segment[itr] = last_segment;
+	return segment;
+}
+
