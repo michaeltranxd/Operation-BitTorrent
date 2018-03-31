@@ -1,6 +1,6 @@
 
-#include "server.h"
-#include "client.h"
+#include "tracker_server.h"
+#include "tracker_client.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
