@@ -71,8 +71,12 @@ int client(char* hostname, char* port){
 
 	(void)numbytes;
 
+	sleep(5);
+
 	if(sendaskforfile(sockfd, FILENAME) == -1)
 		perror("send1");
+
+	sleep(5);
 
 	printf("client: Finished downloading!\n");
 

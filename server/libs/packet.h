@@ -5,11 +5,35 @@
 #ifndef PACKET_H
 #define PACKET_H
 
+#include <stdlib.h>
+#include <pthread.h>
 
+typedef struct packets{
+	char* packet_string;
+	struct packets* next;
+}packets;
+
+typedef struct list{
+	struct packets* head;
+	struct packets* tail;
+	pthread_mutex_t mutex;
+	pthread_cond_t cv;
+}list;
+
+int readOutPacket(int sockfd, char* buf);
+int decodePacket(char* packet);
 int recvpacket(int sockfd);
 int sendaskforfile(int sockfd, char* filename);
-int sendsearchforfile(int sockfd, char* filename/*, list*/);
+int sendsearchforfile(char* filename/*, list*/);
 size_t getfilesize(char* filename);
-int sendhavefile(int sockfd, char* filename);
+//int sendhavefile(int sockfd, char* filename);
+
+
+void pushPacket(list* list, packets* node);
+packets* pullPacket(list* list);
+packets* createPacket(char* packet_string);
+void destroyPacket(packets* packet);
+list* createList();
+void destroyList(list* list);
 
 #endif
