@@ -13,19 +13,15 @@
  */
 void sigchld_handler(int s);
 
-typedef struct packet_executer_struct{
-	list* listOfPackets;
-	int* running;
+struct serve_struct{
+	int sockfd;
+}serve_struct;
 
-}pe_struct;
-
-void* packet_receiver(void* p);
-void* packet_executer(void* p);
+void* serve(void* p);
 
 /**
  *	Main method to setup server
  */
 int server(int argc, char** argv);
-
 
 #endif

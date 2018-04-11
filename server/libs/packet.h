@@ -8,32 +8,45 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-typedef struct packets{
-	char* packet_string;
-	struct packets* next;
-}packets;
+#define ASK_REQ 		1
+#define RESP_REQ 		2
+#define ASK_AVAIL 		3
+#define RESP_AVAIL 		4
+#define ASK_DL			5
+#define RESP_DL			6
 
 typedef struct list{
-	struct packets* head;
-	struct packets* tail;
-	pthread_mutex_t mutex;
-	pthread_cond_t cv;
+	char* ip;
+	char* port;
+	struct list* next;
 }list;
 
+list* connectAll(list* head, char* filename, int* numConnections);
+int connectAndSend(list* node, char* filename);
+list* newConnection(list* head, char* ip, char* port);
+void addConnection(list* head, list* new_list);
+list* removeConnection(list* head, list* remove);
+list* findConnection(list* head, char* ip);
+void destroyList(list* head);
+
+int serverHelper(int sockfd, char* hostname);
+int clientHelper(int sockfd, char* filename, char* myip, char* myserverport);
+int sendHelper(int sockfd, char* packet);
 int readOutPacket(int sockfd, char* buf);
-int decodePacket(char* packet);
-int recvpacket(int sockfd);
-int sendaskforfile(int sockfd, char* filename);
-int sendsearchforfile(char* filename/*, list*/);
-size_t getfilesize(char* filename);
-//int sendhavefile(int sockfd, char* filename);
+list* readPacket(int sockfd, list* head);
 
+int parse_packet_header(char* buf);
+list* decodePacket(char* buf, list* head);
+void makePacket(char* buf, char* filename, char* ip, char* port, int packet_num);
+int sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, int packet_num);
+list* decodePacketNum(char* buf, int packet_num, list* head);
 
-void pushPacket(list* list, packets* node);
-packets* pullPacket(list* list);
-packets* createPacket(char* packet_string);
-void destroyPacket(packets* packet);
-list* createList();
-void destroyList(list* list);
+// types of packet
+int ask_reqPacket(char* buf, char* filename, char* ip, char* port);
+int resp_reqPacket(char* buf, char* filename);
+int ask_availPacket(char* buf, char* filename);
+int resp_availPacket(char* buf, char* filename);
+int ask_dlPacket(char* buf, char* filename);
+int resp_dlPacket(char* buf, char* filename);
 
 #endif

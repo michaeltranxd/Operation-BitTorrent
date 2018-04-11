@@ -6,96 +6,176 @@
 #include <sys/types.h>
 
 #include "packet.h"
+#include "tracker_client.h"
 
 #define MAXBUFSIZE 1024
 
+static char* DELIM = ":";
 
-void pushPacket(list* list, packets* node){
-	pthread_mutex_lock(&(list->mutex));
-	if(list->head == NULL || list->tail == NULL){
-		list->head = node;
-		list->tail = node;
-	}
-	else{
-		list->tail->next = node;
-		list->tail = node;
-	}
-	pthread_cond_signal(&(list->cv));
-	pthread_mutex_unlock(&(list->mutex));
-}
+// connects to every node in network
+list* connectAll(list* head, char* filename, int* numConnections){
+	if(head == NULL)
+		return head;
 
-packets* pullPacket(list* list){
-	packets* packet = NULL;
-	pthread_mutex_lock(&(list->mutex));
-	if(list->head != NULL){
-		packet = list->head;
-		list->head = list->head->next;
-		if(list->head == NULL){ // means that was the last element
-			list->tail = NULL;
+	list* curr = head;
+	list* next;
+
+	while(curr != NULL){
+		next = curr->next;
+
+		if(connectAndSend(curr, filename) == -1)// failed connection so we remove	
+			head = removeConnection(head, curr);
+		else{
+			(*numConnections)++;
 		}
+
+		curr = next;
 	}
-	pthread_mutex_unlock(&(list->mutex));
-	return packet;
+	return head;
 }
 
-packets* createPacket(char* packet_string){
-	packets* packet = malloc(sizeof(struct packets));
-	packet->packet_string = packet_string;
-	packet->next = NULL;
+// helper function that does the connect and send packet
+int connectAndSend(list* node, char* filename){
+	char buf[MAXBUFSIZE];
 
-	return packet;
+	if(t_client(node->ip, node->port, filename, buf, ASK_AVAIL) != 0) // meaning we have failed
+		return -1;
+	return 0;
 }
 
-void destroyPacket(packets* packet){
-	free(packet->packet_string);
-	free(packet);
+// method that checks if connection is a new connection
+list* newConnection(list* head, char* ip, char* port){
+	list* new_list = malloc(sizeof(list));
+	new_list->ip = ip;
+	new_list->port = ip;
+	new_list->next = NULL;
+	if(head == NULL){ // new element should be head;
+		return new_list;
+	}
+
+	list* node = findConnection(head, ip);
+
+	if(node == NULL){ // did not find it so we add
+		addConnection(head, new_list);
+	}
+	// found it so we dont need to do anything
+	return head;
 }
 
-list* createList(){
-	list* list = malloc(sizeof(struct list));
-	list->head = NULL;
-	list->tail = NULL;
-	list->mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-	list->cv = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
-
-	return list;
+// adds the connection
+void addConnection(list* head, list* new_list){
+	list* curr = head;
+	while(curr->next != NULL){
+		curr = curr->next;
+	}
+	curr->next = new_list;
 }
 
-void destroyList(struct list* list){
+// removes the connection
+list* removeConnection(list* head, list* remove){ // should only be called when connection failed with other nodes
+	list* node = remove;
+
+	if(head == node){
+		free(node);
+		return head->next;
+	}
+
+	list* curr = head;
+	while(curr->next != node){
+		if(curr == NULL){ // never found it
+			return NULL;
+		}
+		curr = curr->next;
+	}
+	curr->next = node->next;			// --------    --------    --------
+	free(node);							// |	  |    |      |    |      |
+	return head;						// | curr |--->| node |--->| next |
+										// |      |    |      |    |      |
+										// --------    --------    --------
+										//
+										//               to
+										//
+										//       --------    --------
+										//       |      |    |      |
+										//       | curr |--->| next |
+										//       |      |    |      |
+										//       --------    --------	
 	
-	while(list->head != NULL){
-		free(pullPacket(list));
+	
+}
+
+// helper function that finds connection
+list* findConnection(list* head, char* ip){
+	list* curr = head;
+
+	if(curr == NULL)
+		return NULL;
+
+	while(curr->next != NULL){
+		if(!strcmp(curr->ip, ip)){
+			return curr;
+		}
+		curr = curr->next;
+	}
+
+	return NULL;
+}
+
+// cleans up the list
+void destroyList(list* head){
+
+	list* curr = head;
+	list* old;
+
+	while(curr != NULL){
+		old = curr;
+		curr = curr->next;
+
+		free(old);
 	}
 	
-	pthread_mutex_destroy(&(list->mutex));
-	pthread_cond_destroy(&(list->cv));
-
-	free(list);
 }
 
-//nodes
-int sendaskforfile(int sockfd, char* filename){
-	// ASK:FILENAME;
+// IGNORE THIS!! (this will be useful when implementing
+// server.c when we get there)
+int serverHelper(int sockfd, char* hostname){
 
-	char* header = "ASK:";
+	char buf[1024];
 
-	int size = strlen(filename) + strlen(header);
-
-	char packet[size + 1];
-	memset(packet, 0, size);
-
-	memcpy(packet, header, strlen(header));
-
-	strcat(packet, filename);
-
-	if(write(sockfd, packet, size + 1) == -1){
-		// failure
+	if(readOutPacket(sockfd, buf) == -1){
 		return -1;
 	}
+
+	decodePacket(buf, NULL);
 
 	return 0;
 }
 
+// IGNORE THIS!! (this will be useful when implementing
+// client.c when we get there)
+int clientHelper(int sockfd, char* filename, char* myip, char* myserverport){
+
+	char buf[strlen(filename) + strlen("ASK_REQ:") + 1]; // ASK:FILENAME_
+
+	sendPacket(sockfd, buf, filename, myip, myserverport, ASK_REQ);
+
+	return 1;
+
+}
+
+// Helper function which simply writes it on the socket
+int sendHelper(int sockfd, char* packet){
+	int rv = 0;	
+
+	if((rv = write(sockfd, packet, strlen(packet))) == -1){
+		return -1;
+	}
+
+	return rv;
+
+}
+
+// function that simply reads out the packet
 int readOutPacket(int sockfd, char* buf){
 	int rv = 0;
 
@@ -106,181 +186,196 @@ int readOutPacket(int sockfd, char* buf){
 	return rv;
 }
 
-int decodePacket(char* packet){
-	// ASK:FILENAME;
-
-	char* copy = strdup(packet);
-
-	char* header = strtok(copy, ":");
-	fprintf(stderr, "%s\n", header);
-
-	if(!strcmp(header, "ASK")){
-		fprintf(stderr, "Received %s header\n", header);
-		// send to every connection
-	}
-	else if(!strcmp(header, "SEARCH")){
-		fprintf(stderr, "Received %s header\n", header);
-	}
-	else if(!strcmp(header, "RESP")){
-		fprintf(stderr, "Received %s header\n", header);
-		// compile list
-	}
-	else if(!strcmp(header, "DL")){
-		fprintf(stderr, "Received %s header\n", header);
-	}
-	else if(!strcmp(header, "DLSEG")){
-		fprintf(stderr, "Received %s header\n", header);
-	}
-
-//	free(copy);
-
-	return 0;
-}
-
-
-
-
-// tracker & nodes
-int recvpacket(int sockfd/*, list*/){
-	// ASK:FILENAME;
-	(void)sockfd;
-
+// method that server.c will call
+list* readPacket(int sockfd, list* head){
 	char buf[MAXBUFSIZE];
 
-	if(read(sockfd, buf, MAXBUFSIZE) == -1){ // blocks here
-		// failure
-		return -1;
+	readOutPacket(sockfd, buf);
+
+	return decodePacket(buf, head);
+}
+
+// just parsing to find the packet number
+int parse_packet_header(char* buf){
+
+	char* buf_copy = strdup(buf);
+	char* orig = buf_copy; 					// part of cleanup
+	char* header = strtok(buf_copy, DELIM);
+
+	int rv = -1;
+
+	if(!strcmp(header, "ASK_REQ")){
+		rv = ASK_REQ;
+	}
+	else if(!strcmp(header, "RESP_REQ")){
+		rv = RESP_REQ;
+	}
+	else if(!strcmp(header, "ASK_AVAIL")){
+		rv = ASK_AVAIL;
+	}
+	else if(!strcmp(header, "RESP_AVAIL")){
+		rv = RESP_AVAIL;
+	}
+	else if(!strcmp(header, "ASK_DL")){
+		rv = ASK_DL;
+	}
+	else if(!strcmp(header, "RESP_DL")){
+		rv = RESP_DL;
 	}
 
-	char* header = strtok(buf, ":");
-	fprintf(stderr, "%s\n", header);
+	free(orig);
 
-	if(!strcmp(header, "ASK")){
-		fprintf(stderr, "Recvieved %s header\n", header);
-//		sendsearchforfile(buf/*, list*/);
-		recvpacket(sockfd);
+	return rv;
+}
+
+// this method will be running when receiving packets
+list* decodePacket(char* buf, list* head){
+
+	int packet_num = parse_packet_header(buf);
+
+	return decodePacketNum(buf, packet_num, head);
+
+}
+
+
+// this method focused on building packets to send
+void makePacket(char* buf, char* filename, char* ip, char* port, int packet_num){
+	
+	switch(packet_num){
+		case ASK_REQ:
+			ask_reqPacket(buf, filename, ip, port);
+			break;
+		case RESP_REQ:
+			resp_reqPacket(buf, filename);
+			break;
+		case ASK_AVAIL:
+			ask_availPacket(buf, filename);
+			break;
+		case RESP_AVAIL:
+			resp_availPacket(buf, filename);
+			break;
+		case ASK_DL:
+			ask_dlPacket(buf, filename);
+			break;
+		case RESP_DL:
+			resp_dlPacket(buf, filename);
+			break;
 	}
-	else if(!strcmp(header, "SEARCH")){
-		fprintf(stderr, "Recvieved %s header\n", header);
+}
+
+// this method is designed to be sending packets
+int sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, int packet_num){
+
+	makePacket(buf, filename, ip, port, packet_num); // creates the packet according to
+								 // the packet_num
+	return sendHelper(sockfd, buf);
+}
+
+// packet_num corresponds to the kinds of packets we have defined
+// this method is designed to be decoding receiving packets
+list* decodePacketNum(char* buf, int packet_num, list* head){
+
+	char* buf_copy = strdup(buf);
+	char* orig = buf_copy; 				// part of cleanup
+	strtok(buf_copy, DELIM); 			// now buf_copy is the data
+
+	//declaration of statements
+	char* filename; // filename
+	char* ip; 		// ip
+	char* port;		// port
+
+	int numUsers = 0;
+
+	switch(packet_num){
+		case ASK_REQ: // ASKREQ:FILENAME:IP:PORT (port being the port
+					  // that the requester's server is on
+
+			// someone wants file, we need to ask
+			// others to see if they have the files	
+
+			filename = strtok(NULL, DELIM); // filename
+			ip = strtok(NULL, DELIM); // ip
+			port = buf_copy;			  // port
+
+			head = newConnection(head, ip, port);
+
+			head = connectAll(head, filename, &numUsers);
+
+			// wait for responses??
+			// so I can compile a list?
+
+			break;
+		case RESP_REQ:
+			// tracker has sent back a list
+			// now we should download from others
+			break;
+		case ASK_AVAIL:
+			// tracker wants to know if I have file
+			// so I will check the filessystem and
+			// send my info if I have or dont have
+			break;
+		case RESP_AVAIL:
+			// someone has sent me back their file
+			// availability, lets compile a list
+			// linked list?
+			break;
+		case ASK_DL:
+			// my peer has asked to download
+			break;
+		case RESP_DL:
+			// first check if has file, then if it does
+			// send file
+			break;
 	}
-	else if(!strcmp(header, "RESP")){
-		fprintf(stderr, "Recvieved %s header\n", header);
-		// compile list
-	}
-	else if(!strcmp(header, "DL")){
-		fprintf(stderr, "Recvieved %s header\n", header);
-	}
-	else if(!strcmp(header, "DLSEG")){
-		fprintf(stderr, "Recvieved %s header\n", header);
-	}
+	free(orig);
+	return head;
+
+}
+
+// Below here is the list of packets that can be 'maked'
+
+int ask_reqPacket(char* buf, char* filename, char* ip, char* port){
+
+	char* header = "ASK_REQ:";
+
+	sprintf(buf, "%s%s:%s:%s", header, filename, ip, port);
+
+	buf[strlen(buf)] = '\0';
 
 	return 0;
 }
 
-int sendsearchforfile(char* filename/*, list*/){
-	// ASK:FILENAME;
-
-	char* header = "SEARCH:";
-
-	int size = strlen(filename) + strlen(header);
-
-	char packet[size + 1];
-	memset(packet, 0, size);
-
-	memcpy(packet, header, strlen(header));
-
-	strcat(packet, filename);
-
-//	if(write(sockfd, packet, size + 1) == -1){
-//		// failure
-//		return -1;
-//	}
-
+int resp_reqPacket(char* buf, char* filename){
+	// silence warnings;
+	if(buf == filename)
+		return 1;
 	return 0;
 }
 
-size_t getfilesize(char* filename){
-
-	size_t size = 0;
-
-	if(access(filename, R_OK) == 0){
-		// have file
-		struct stat st;
-		stat(filename, &st);
-		size = st.st_size;
-
-	}
-	
-	return size;
-
-}
-
-int sendhavefile(int sockfd, char* filename){
-	// 
-	(void)sockfd;
-
-	char* header = "RESP:";
-
-
-	// 16 means num of digits max filesize = 10^16 bytes
-	char num[16];
-
-	// int -> string representation
-	sprintf(num, "%zu", getfilesize(filename));
-	
-	int size = strlen(num) + strlen(header);
-
-	char packet[size + 1];
-
-	memset(packet, 0, size);
-
-	memcpy(packet, header, strlen(header));
-
-	strcat(packet, num);
-
-	fprintf(stderr, "%s\n", packet);
-	
-
-//	if(write(sockfd, packet, size + 1) == -1){
-//		// failure
-//		return -1;
-//	}
-
+int ask_availPacket(char* buf, char* filename){
+	// silence warnings;
+	if(buf == filename)
+		return 1;
 	return 0;
 }
 
-/*
-int sendnodeswithfile(int sockfd, char* filename){
-	//
-	(void)sockfd;
-
-	char* header = "RESP:";
-
-
-	// 16 means num of digits max filesize = 10^16 bytes
-	char num[16];
-
-	// int -> string representation
-	sprintf(num, "%zu", getfilesize(filename));
-	
-	int size = strlen(num) + strlen(header);
-
-	char packet[size + 1];
-
-	memset(packet, 0, size);
-
-	memcpy(packet, header, strlen(header));
-
-	strcat(packet, num);
-
-	fprintf(stderr, "%s\n", packet);
-	
-
-//	if(write(sockfd, packet, size + 1) == -1){
-//		// failure
-//		return -1;
-//	}
-
+int resp_availPacket(char* buf, char* filename){
+	// silence warnings;
+	if(buf == filename)
+		return 1;
 	return 0;
 }
-*/
+
+int ask_dlPacket(char* buf, char* filename){
+	// silence warnings;
+	if(buf == filename)
+		return 1;
+	return 0;
+}
+
+int resp_dlPacket(char* buf, char* filename){
+	// silence warnings;
+	if(buf == filename)
+		return 1;
+	return 0;
+}
