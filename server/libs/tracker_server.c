@@ -2,7 +2,6 @@
  *	tracker_server.c -- a stream socket server demo
  */
 
-#include "server.h"
 #include "utils.h"
 #include "tracker_server.h"
 
@@ -31,99 +30,8 @@
 
 #define MAXBUFSIZE 1024
 
-static volatile int clientsCount;
-static volatile int clients[MAX_CLIENTS];
-
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-
-void* packet_executer(void* p){ // executes packet
-
-	pe_struct* pe_struct = p;
-	list* listOfPackets = pe_struct->listOfPackets;
-	int* running = pe_struct->running;
-
-	packets* packet = NULL;
-
-	int connected = 1;
-
-	while(connected){
-
-		packet = pullPacket(listOfPackets);
-
-		if(packet == NULL){
-			pthread_cond_wait(&(listOfPackets->cv), &(listOfPackets->mutex));
-			if(*running == 0)
-				connected = 0;
-			pthread_mutex_unlock(&(listOfPackets->mutex));
-		}
-		else{
-			// within the methods we should do whats necessary maybe?
-			decodePacket(packet->packet_string);
-		}
-
-	}
-
-	return NULL;
-
-}
-
-void* packet_receiver(void* p){ // receives packet on socket p
-	int* clientId = (int*)p;
-
-	// socket would be clients[clientId]
-	
-
-	int returnVal = 1;
-
-	list* listOfPackets = createList();
-
-	// struct for packet_executer to have running
-	pe_struct* pe_struct = malloc(sizeof(struct packet_executer_struct));
-	pe_struct->listOfPackets = listOfPackets;
-	pe_struct->running = malloc(sizeof(int));
-	*pe_struct->running = 1;
-
-
-
-	pthread_t newthread;
-	pthread_create(&newthread, NULL, packet_executer, (void*)pe_struct);
-
-	char buf[MAXBUFSIZE];
-
-	while(returnVal > 0){
-
-
-		returnVal = readOutPacket(clients[*clientId], buf);
-
-		if(returnVal > 0){
-
-			char* packet_string = calloc(sizeof(char), returnVal + 1);
-
-			memcpy(packet_string, buf, returnVal);
-
-			pushPacket(listOfPackets, createPacket(packet_string));
-		
-			fprintf(stderr, "returnVal was:%d, packet_string:%s\n", returnVal, packet_string);
-		
-		}
-	}
-
-	pthread_mutex_lock(&mutex);
-	clients[*clientId] = -1;
-	pthread_mutex_unlock(&mutex);
-
-	pthread_join(newthread, NULL);
-
-	destroyList(listOfPackets);
-
-	free(clientId);
-	free(pe_struct->running);
-	free(pe_struct);
-
-	return NULL;
-}
-
-
+list* head = NULL;
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 
 void sigchld_handler(int s){
 	// waitpid() might overwrite errno, so we save and restore it:
@@ -203,10 +111,6 @@ int server(int argc, char** argv){
 		exit(1);
 	}
 
-	for(int i = 0; i < MAX_CLIENTS; i++){
-		clients[i] = -1;
-	}
-
 	printf("server: waiting for connections...\n");
 
 	while(1){
@@ -221,30 +125,27 @@ int server(int argc, char** argv){
 		printf("server: got connection from %s\n", s);
 
 
-		int isAdded = 0;
-		for(int i = 0; i < MAX_CLIENTS; i++){
-			pthread_mutex_lock(&mutex);
-			if(clients[i] == -1){
-				clients[i] = new_fd;
-				isAdded = 1;
+		pthread_t new_thread;
 
-				int* temp = malloc(sizeof(int));
-				*temp = i;
+		int* fd = malloc(sizeof(int));
+		*fd = sockfd;
 
-				pthread_t newthread;
-				pthread_create(&newthread, NULL, packet_receiver, (void*)temp);
-				pthread_detach(newthread);
-				pthread_mutex_unlock(&mutex);
-				break;
-			}
-			pthread_mutex_unlock(&mutex);
-		}
-		if(isAdded == 0){ // did not have open spot
-			close(new_fd); // closes connection
-			fprintf(stderr, "sorry full!\n");
-		}
+		pthread_create(&new_thread, NULL, serve, (void*)fd);
+
 	}
-	
 
+}
+
+void* serve(void* p){
+	int sockfd = *(int*)p;
+
+	pthread_mutex_lock(&m);
+	head = readPacket(sockfd, head);
+	pthread_mutex_unlock(&m);
+
+	close(sockfd);
+	free(p);
+
+	return NULL;
 }
 
