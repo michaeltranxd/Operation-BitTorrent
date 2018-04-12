@@ -21,8 +21,8 @@ typedef struct list{
 	struct list* next;
 }list;
 
-list* connectAll(list* head, char* filename, int* numConnections);
-int connectAndSend(list* node, char* filename);
+list* connectAll(list* head, char* filename, int* numConnections, char* buf);
+long long connectAndSend(list* node, char* filename);
 list* newConnection(list* head, char* ip, char* port);
 void addConnection(list* head, list* new_list);
 list* removeConnection(list* head, list* remove);
@@ -38,7 +38,7 @@ list* readPacket(int sockfd, list* head);
 int parse_packet_header(char* buf);
 list* decodePacket(char* buf, list* head);
 void makePacket(char* buf, char* filename, char* ip, char* port, int packet_num);
-int sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, int packet_num);
+long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, int packet_num);
 list* decodePacketNum(char* buf, int packet_num, list* head);
 
 // types of packet

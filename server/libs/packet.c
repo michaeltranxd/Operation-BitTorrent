@@ -12,22 +12,44 @@
 
 static char* DELIM = ":";
 
+/*
+*
+* TRACKER
+*
+*/
+
 // connects to every node in network
-list* connectAll(list* head, char* filename, int* numConnections){
+list* connectAll(list* head, char* filename, int* numConnections, char* buf){
 	if(head == NULL)
 		return head;
 
 	list* curr = head;
 	list* next;
 
+	long long rv;
+
 	while(curr != NULL){
 		next = curr->next;
 
-		if(connectAndSend(curr, filename) == -1)// failed connection so we remove	
-			head = removeConnection(head, curr);
-		else{
+		rv = connectAndSend(curr, filename);
+
+		if (rv > 0) {
 			(*numConnections)++;
+
+			if (*numConnections == 1) { // first connection, add filesize to buf
+				char filesize[256];
+				sprintf(filesize, ":%lld", rv);
+				strcat(buf, filesize);
+			}
+
+			char str[256];
+			sprintf(str, ":%s:%s", curr->ip, curr->port);
+			strcat(buf, str);
+
+			// append good ips to buf
 		}
+		else if (rv == -1) // failed connection so we remove
+			head = removeConnection(head, curr);
 
 		curr = next;
 	}
@@ -35,12 +57,16 @@ list* connectAll(list* head, char* filename, int* numConnections){
 }
 
 // helper function that does the connect and send packet
-int connectAndSend(list* node, char* filename){
+long long connectAndSend(list* node, char* filename){
 	char buf[MAXBUFSIZE];
 
-	if(t_client(node->ip, node->port, filename, buf, ASK_AVAIL) != 0) // meaning we have failed
+	long long rv = t_client(node->ip, node->port, filename, buf, ASK_AVAIL);
+
+	if (rv > 0) // rv is filesize if node has file, else node would return 0
+		return rv;
+	else if (rv == -1) // failed to connect to node
 		return -1;
-	return 0;
+	return 0; // no file found
 }
 
 // method that checks if connection is a new connection
@@ -135,6 +161,14 @@ void destroyList(list* head){
 	}
 	
 }
+
+
+/*
+*
+* TRACKER
+*
+*/
+
 
 // IGNORE THIS!! (this will be useful when implementing
 // server.c when we get there)
@@ -264,12 +298,35 @@ void makePacket(char* buf, char* filename, char* ip, char* port, int packet_num)
 }
 
 // this method is designed to be sending packets
-int sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, int packet_num){
+long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, int packet_num){
 
 	makePacket(buf, filename, ip, port, packet_num); // creates the packet according to
 								 // the packet_num
-	return sendHelper(sockfd, buf);
+
+	long long rv = sendHelper(sockfd, buf);
+
+	// read RESP_AVAIL packet from node
+	if (packet_num == ASK_AVAIL) {
+		char resp_buf[MAXBUFSIZE];
+
+		readOutPacket(sockfd, resp_buf);
+
+		strtok(resp_buf, DELIM);
+
+		long long filesize = atoll(resp_buf);	// buf_copy contains str file_size
+		// <= 0 if file not there, else filesize
+
+		// if packet is yes
+		return filesize;
+	}
+	else if (packet_num == ASK_DL) {
+
+	}
+
+	return rv;
 }
+
+
 
 // packet_num corresponds to the kinds of packets we have defined
 // this method is designed to be decoding receiving packets
@@ -299,10 +356,26 @@ list* decodePacketNum(char* buf, int packet_num, list* head){
 
 			head = newConnection(head, ip, port);
 
-			head = connectAll(head, filename, &numUsers);
+			// making RESP_REQ
+			char buf[MAXBUFSIZE];
+			makePacket(buf, filename, NULL, NULL, RESP_REQ);
 
-			// wait for responses??
-			// so I can compile a list?
+			head = connectAll(head, filename, &numUsers, buf);
+
+			if (numUsers != 0) {
+				int sockfd;
+				if ((sockfd = getConnection(ip, port)) == -1){ // failed
+					break;
+				}
+
+				sendHelper(sockfd, buf);
+				close(sockfd);
+			}
+			else { // no one has file
+
+				// send error messgae back to requester
+
+			}
 
 			break;
 		case RESP_REQ:
@@ -314,7 +387,7 @@ list* decodePacketNum(char* buf, int packet_num, list* head){
 			// so I will check the filessystem and
 			// send my info if I have or dont have
 			break;
-		case RESP_AVAIL:
+		case RESP_AVAIL:	// RESP_AVAIL:FILESIZE
 			// someone has sent me back their file
 			// availability, lets compile a list
 			// linked list?
@@ -336,9 +409,9 @@ list* decodePacketNum(char* buf, int packet_num, list* head){
 
 int ask_reqPacket(char* buf, char* filename, char* ip, char* port){
 
-	char* header = "ASK_REQ:";
+	char* header = "ASK_REQ";
 
-	sprintf(buf, "%s%s:%s:%s", header, filename, ip, port);
+	sprintf(buf, "%s:%s:%s:%s", header, filename, ip, port);
 
 	buf[strlen(buf)] = '\0';
 
@@ -346,16 +419,22 @@ int ask_reqPacket(char* buf, char* filename, char* ip, char* port){
 }
 
 int resp_reqPacket(char* buf, char* filename){
-	// silence warnings;
-	if(buf == filename)
-		return 1;
+	char* header = "RESP_REQ";
+
+	sprintf(buf, "%s:%s", header, filename);
+
+	buf[strlen(buf)] = '\0';
+
 	return 0;
 }
 
 int ask_availPacket(char* buf, char* filename){
-	// silence warnings;
-	if(buf == filename)
-		return 1;
+	char* header = "ASK_AVAIL";
+
+	sprintf(buf, "%s:%s", header, filename);
+
+	buf[strlen(buf)] = '\0';
+
 	return 0;
 }
 

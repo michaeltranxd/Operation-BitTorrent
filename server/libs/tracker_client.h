@@ -9,6 +9,8 @@
  *	Main method for client that runs the client
  *	portion
  */
+
+int getConnection(char* hostname, char* port);
 int t_client(char* hostname, char* port, char* filename, char* buf, int packet_num);
 
 #endif
