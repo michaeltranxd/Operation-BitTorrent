@@ -10,10 +10,10 @@
 
 #define MAXBUFSIZE 1024
 
-static char* DELIM = ":";
+static char *DELIM = ":";
 
 // connects to every node in network
-list* connectAll(list* head, char* filename, int* numConnections){
+list* connectAll(list* head, char *filename, int* numConnections){
 	if(head == NULL)
 		return head;
 
@@ -35,7 +35,7 @@ list* connectAll(list* head, char* filename, int* numConnections){
 }
 
 // helper function that does the connect and send packet
-int connectAndSend(list* node, char* filename){
+int connectAndSend(list* node, char *filename){
 	char buf[MAXBUFSIZE];
 
 	if(t_client(node->ip, node->port, filename, buf, ASK_AVAIL) != 0) // meaning we have failed
@@ -44,7 +44,7 @@ int connectAndSend(list* node, char* filename){
 }
 
 // method that checks if connection is a new connection
-list* newConnection(list* head, char* ip, char* port){
+list* newConnection(list* head, char *ip, char *port){
 	list* new_list = malloc(sizeof(list));
 	new_list->ip = ip;
 	new_list->port = ip;
@@ -105,7 +105,7 @@ list* removeConnection(list* head, list* remove){ // should only be called when 
 }
 
 // helper function that finds connection
-list* findConnection(list* head, char* ip){
+list* findConnection(list* head, char *ip){
 	list* curr = head;
 
 	if(curr == NULL)
@@ -138,7 +138,7 @@ void destroyList(list* head){
 
 // IGNORE THIS!! (this will be useful when implementing
 // server.c when we get there)
-int serverHelper(int sockfd, char* hostname){
+int serverHelper(int sockfd, char *hostname){
 
 	char buf[1024];
 
@@ -153,7 +153,7 @@ int serverHelper(int sockfd, char* hostname){
 
 // IGNORE THIS!! (this will be useful when implementing
 // client.c when we get there)
-int clientHelper(int sockfd, char* filename, char* myip, char* myserverport){
+int clientHelper(int sockfd, char *filename, char *myip, char *myserverport){
 
 	char buf[strlen(filename) + strlen("ASK_REQ:") + 1]; // ASK:FILENAME_
 
@@ -164,7 +164,7 @@ int clientHelper(int sockfd, char* filename, char* myip, char* myserverport){
 }
 
 // Helper function which simply writes it on the socket
-int sendHelper(int sockfd, char* packet){
+int sendHelper(int sockfd, char *packet){
 	int rv = 0;	
 
 	if((rv = write(sockfd, packet, strlen(packet))) == -1){
@@ -176,7 +176,7 @@ int sendHelper(int sockfd, char* packet){
 }
 
 // function that simply reads out the packet
-int readOutPacket(int sockfd, char* buf){
+int readOutPacket(int sockfd, char *buf){
 	int rv = 0;
 
 	if((rv = read(sockfd, buf, MAXBUFSIZE)) == -1){
@@ -196,11 +196,11 @@ list* readPacket(int sockfd, list* head){
 }
 
 // just parsing to find the packet number
-int parse_packet_header(char* buf){
+int parse_packet_header(char *buf){
 
-	char* buf_copy = strdup(buf);
-	char* orig = buf_copy; 					// part of cleanup
-	char* header = strtok(buf_copy, DELIM);
+	char *buf_copy = strdup(buf);
+	char *orig = buf_copy; 					// part of cleanup
+	char *header = strtok(buf_copy, DELIM);
 
 	int rv = -1;
 
@@ -229,7 +229,7 @@ int parse_packet_header(char* buf){
 }
 
 // this method will be running when receiving packets
-list* decodePacket(char* buf, list* head){
+list* decodePacket(char *buf, list* head){
 
 	int packet_num = parse_packet_header(buf);
 
@@ -239,7 +239,7 @@ list* decodePacket(char* buf, list* head){
 
 
 // this method focused on building packets to send
-void makePacket(char* buf, char* filename, char* ip, char* port, int packet_num){
+void makePacket(char *buf, char *filename, char *ip, char *port, int packet_num){
 	
 	switch(packet_num){
 		case ASK_REQ:
@@ -264,7 +264,7 @@ void makePacket(char* buf, char* filename, char* ip, char* port, int packet_num)
 }
 
 // this method is designed to be sending packets
-int sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, int packet_num){
+int sendPacket(int sockfd, char *buf, char *filename, char *ip, char *port, int packet_num){
 
 	makePacket(buf, filename, ip, port, packet_num); // creates the packet according to
 								 // the packet_num
@@ -273,16 +273,18 @@ int sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, int 
 
 // packet_num corresponds to the kinds of packets we have defined
 // this method is designed to be decoding receiving packets
-list* decodePacketNum(char* buf, int packet_num, list* head){
+list* decodePacketNum(char *buf, int packet_num, list* head){
 
-	char* buf_copy = strdup(buf);
-	char* orig = buf_copy; 				// part of cleanup
+	char *buf_copy = strdup(buf);
+	char *orig = buf_copy; 				// part of cleanup
 	strtok(buf_copy, DELIM); 			// now buf_copy is the data
 
 	//declaration of statements
-	char* filename; // filename
-	char* ip; 		// ip
-	char* port;		// port
+	char *filename; 	// filename
+	char *ip; 		// ip
+	char *port;		// port
+	char *filesize;		// size of the file being transferred
+	char *index; 		// index of the segment
 
 	int numUsers = 0;
 
@@ -313,18 +315,33 @@ list* decodePacketNum(char* buf, int packet_num, list* head){
 			// tracker wants to know if I have file
 			// so I will check the filessystem and
 			// send my info if I have or dont have
+			filename = strtok(NULL, DELIM);
+			ip = strtok(NULL, DELIM); 
+			port = buf_copy;			  
+
 			break;
 		case RESP_AVAIL:
 			// someone has sent me back their file
 			// availability, lets compile a list
 			// linked list?
+			filename = strtok(NULL, DELIM);
+			filesize = strtok(NULL, DELIM);
+
 			break;
 		case ASK_DL:
 			// my peer has asked to download
+			filename = strtok(NULL, DELIM);
+			filesize = strtok(NULL, DELIM);
+			index = strtok(NULL, DELIM);
+
+
 			break;
 		case RESP_DL:
 			// first check if has file, then if it does
 			// send file
+			filename = strtok(NULL, DELIM);
+			filesize = strtok(NULL, DELIM);
+			index = strtok(NULL, DELIM);
 			break;
 	}
 	free(orig);
@@ -334,48 +351,71 @@ list* decodePacketNum(char* buf, int packet_num, list* head){
 
 // Below here is the list of packets that can be 'maked'
 
-int ask_reqPacket(char* buf, char* filename, char* ip, char* port){
+int ask_reqPacket(char *buf, char *filename, char *ip, char *port){
 
-	char* header = "ASK_REQ:";
+	char *header = "ASK_REQ";
 
-	sprintf(buf, "%s%s:%s:%s", header, filename, ip, port);
+	sprintf(buf, "%s:%s:%s:%s", header, filename, ip, port);
 
 	buf[strlen(buf)] = '\0';
 
 	return 0;
 }
 
-int resp_reqPacket(char* buf, char* filename){
+int resp_reqPacket(char *buf, char *filename){
 	// silence warnings;
 	if(buf == filename)
 		return 1;
 	return 0;
 }
 
-int ask_availPacket(char* buf, char* filename){
-	// silence warnings;
-	if(buf == filename)
-		return 1;
+int ask_availPacket(char *buf, char *filename, char *ip, char *port){
+	// @para filename: name of the target file
+	// 	ip, port: ip and port of the tracker
+	char *header = "ASK_AVAIL";
+
+	sprintf(buf, "%s:%s:%s:%s", header, filename, ip, port);
+	
+	buf[strlen(buf)] = '\0';
+
 	return 0;
 }
 
-int resp_availPacket(char* buf, char* filename){
-	// silence warnings;
-	if(buf == filename)
-		return 1;
+int resp_availPacket(char *buf, char *filename, char *filesize){
+	// @para filename: name of the target file
+	// 	filesize: size of the entire target file (instead of a segment of the target file)
+	char *header = "RESP_AVAIL";
+
+	sprintf(buf, "%s:%s:%s", header, filename, filesize);
+	
+	buf[strlen(buf)] = '\0';
+
 	return 0;
 }
 
-int ask_dlPacket(char* buf, char* filename){
-	// silence warnings;
-	if(buf == filename)
-		return 1;
+int ask_dlPacket(char *buf, char *filename, char *filesize, char *index){
+	// @para filename: name of the target file
+	//
+	// 	filesize: size of the segment
+	//
+	// 	index: index of the segment. 
+	// 	if (index == 0), send the entire file with no partitioning
+	// 	if (index > 0), send the corresponding segment of index
+	char *header = "ASK_DL";
+
+	sprintf(buf, "%s:%s:%s:%s", header, filename, filesize, index);
+	
+	buf[strlen(buf)] = '\0';
+
 	return 0;
 }
 
-int resp_dlPacket(char* buf, char* filename){
-	// silence warnings;
-	if(buf == filename)
-		return 1;
+int resp_dlPacket(char *buf, char *filename, char *filesize, char *index){
+	char *header = "RESP_DL";
+
+	sprintf(buf, "%s:%s:%s%s", header, filename, filesize, index);
+	
+	buf[strlen(buf)] = '\0';
+
 	return 0;
 }
