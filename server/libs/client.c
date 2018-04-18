@@ -77,7 +77,7 @@ int getConnection(char* hostname, char* port){
 }
 
 long long client(char* hostname, char* port, char* filename, char* buf, int packet_num){
-	int sockfd, 
+	int sockfd; 
 	long long rv;
 
 	if((sockfd = getConnection(hostname, port)) == -1){ // failed
