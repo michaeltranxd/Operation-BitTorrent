@@ -211,6 +211,8 @@ int* combine_file(char *base_filename, int segment_count) {
 				printf("the segment index related to this file is %d\n", index);
 
 				close(fd);
+				//free(ret);
+				//exit(-1);
 			}
 
 			else {
