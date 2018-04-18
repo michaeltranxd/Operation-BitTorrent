@@ -1,10 +1,10 @@
+
 /*
  *	client.c -- a stream socket client demo
  */
 
-#include "client.h"
-#include "utils.h"
 #include "packet.h"
+#include "utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,9 +21,7 @@
 
 //#define PORT "3490" // the port client will be connecting to
 
-#define FILENAME "testget.txt" // hard coded filename to receive
-
-int client(char* hostname, char* port){
+int getConnection(char* hostname, char* port){
 	int sockfd, numbytes;
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
@@ -31,7 +29,7 @@ int client(char* hostname, char* port){
 
 	if(hostname == NULL || port == NULL){
 		fprintf(stderr, "usage: hostname port\n");
-		return 1;
+		return -1;
 	}
 
 	memset(&hints, 0, sizeof hints);
@@ -40,7 +38,7 @@ int client(char* hostname, char* port){
 
 	if((rv = getaddrinfo(hostname, port, &hints, &servinfo)) != 0){
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-		return 1;
+		return -1;
 	}
 
 	// loop through all the results and connect to the first we can
@@ -61,7 +59,7 @@ int client(char* hostname, char* port){
 
 	if(p == NULL){
 		fprintf(stderr, "client: failed to connect\n");
-		return 2;
+		return -1;
 	}
 
 	inet_ntop(p->ai_family, get_in_addr((struct sockaddr*)p->ai_addr), s, sizeof s);
@@ -71,21 +69,26 @@ int client(char* hostname, char* port){
 
 	(void)numbytes;
 
-	sleep(5);
 
-	if(sendaskforfile(sockfd, FILENAME) == -1)
-		perror("send1");
+	printf("tracker success! Connected!\n");
 
-	sleep(5);
-
-	printf("client: Finished downloading!\n");
-
-	close(sockfd);
-
-	return 0;
+	return sockfd;
 
 }
 
+int client(char* hostname, char* port, char* filename, char* buf, int packet_num){
+	int sockfd, rv;
 
+	if((sockfd = getConnection(hostname, port)) == -1){ // failed
+		return -1;
+	}
+
+	rv = sendPacket(sockfd, buf, filename, hostname, port, packet_num);	
+	
+	close(sockfd);
+
+	return rv;
+
+}
 
 

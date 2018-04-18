@@ -29,8 +29,6 @@ list* removeConnection(list* head, list* remove);
 list* findConnection(list* head, char* ip);
 void destroyList(list* head);
 
-int serverHelper(int sockfd, char* hostname);
-int clientHelper(int sockfd, char* filename, char* myip, char* myserverport);
 int sendHelper(int sockfd, char* packet);
 int readOutPacket(int sockfd, char* buf);
 list* readPacket(int sockfd, list* head);

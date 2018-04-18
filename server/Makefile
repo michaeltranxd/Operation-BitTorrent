@@ -6,14 +6,14 @@ PTHREAD = -pthread
 LIBS = libs/
 INCLUDES = -I$(LIBS)
 
-OBJS_SERVER_CLIENT = server_client.c
-OBJS_INCLUDES = $(LIBS)server.c $(LIBS)utils.c $(LIBS)client.c $(LIBS)packet.c
+OBJS_SERVER_CLIENT = peer.c
+OBJS_INCLUDES = $(LIBS)p_server.c $(LIBS)utils.c $(LIBS)client.c $(LIBS)packet.c
 #OBJS_O = server.o utils.o client.o file_transfer.o
 
 TRACKER_OBJS_SERVER_CLIENT = tracker.c
-TRACKER_OBJS_INCLUDES = $(LIBS)tracker_server.c $(LIBS)utils.c $(LIBS)tracker_client.c $(LIBS)packet.c
+TRACKER_OBJS_INCLUDES = $(LIBS)t_server.c $(LIBS)utils.c $(LIBS)client.c $(LIBS)packet.c
 
-EXE_NAME = server_client
+EXE_NAME = peer
 TRACKER_EXE_NAME = tracker
 
 server_client:

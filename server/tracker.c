@@ -1,6 +1,5 @@
 
-#include "tracker_server.h"
-#include "tracker_client.h"
+#include "t_server.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +18,7 @@ typedef struct argc_argv{
 
 void* server_thread_method(void* ptr){
 	argcv* args = ptr;
-	server(args->argc, args->argv);
+	t_server(args->argc, args->argv);
 	return ptr;
 }
 

@@ -6,7 +6,7 @@
 #include <sys/types.h>
 
 #include "packet.h"
-#include "tracker_client.h"
+#include "client.h"
 
 #define MAXBUFSIZE 1024
 
@@ -38,7 +38,7 @@ list* connectAll(list* head, char* filename, int* numConnections){
 int connectAndSend(list* node, char* filename){
 	char buf[MAXBUFSIZE];
 
-	if(t_client(node->ip, node->port, filename, buf, ASK_AVAIL) != 0) // meaning we have failed
+	if(client(node->ip, node->port, filename, buf, ASK_AVAIL) != 0) // meaning we have failed
 		return -1;
 	return 0;
 }
@@ -47,7 +47,7 @@ int connectAndSend(list* node, char* filename){
 list* newConnection(list* head, char* ip, char* port){
 	list* new_list = malloc(sizeof(list));
 	new_list->ip = ip;
-	new_list->port = ip;
+	new_list->port = port;
 	new_list->next = NULL;
 	if(head == NULL){ // new element should be head;
 		return new_list;
@@ -134,33 +134,6 @@ void destroyList(list* head){
 		free(old);
 	}
 	
-}
-
-// IGNORE THIS!! (this will be useful when implementing
-// server.c when we get there)
-int serverHelper(int sockfd, char* hostname){
-
-	char buf[1024];
-
-	if(readOutPacket(sockfd, buf) == -1){
-		return -1;
-	}
-
-	decodePacket(buf, NULL);
-
-	return 0;
-}
-
-// IGNORE THIS!! (this will be useful when implementing
-// client.c when we get there)
-int clientHelper(int sockfd, char* filename, char* myip, char* myserverport){
-
-	char buf[strlen(filename) + strlen("ASK_REQ:") + 1]; // ASK:FILENAME_
-
-	sendPacket(sockfd, buf, filename, myip, myserverport, ASK_REQ);
-
-	return 1;
-
 }
 
 // Helper function which simply writes it on the socket
