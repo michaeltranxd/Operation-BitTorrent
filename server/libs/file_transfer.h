@@ -78,41 +78,62 @@ ssize_t recv_file(char *base_filename, int sockfd, int file_index, size_t file_s
 
  /**
   * Combine all parts of a file into one complete file using mmap()
+  * On success, return NULL
+  * On failure due to missing segments, return an array of int containing the index of the missing segments
+  * This array should be freed after it is no longer of use
   * 
   * @para
-  * 	base_filename:	Name of the final combined file. Search in log file to find \
-  * 	its partitions/ segments
+  * 	base_filename:	Name of the final combined file. 
+  *
+  * 	segment_counts:	Total number of partition the file should have. 
+  *
+  * 	segment_size: 	Size of the each segment.
+  *
+  * @return
+  * 	On success, return NULL
+  * 	Else, return an int array of size segment_count containing index of missing segments
+  * 	This array should be freed later
   *
   * @todo
-  * 	1. Search within log file to make sure all partitions of this file exist
+  * 	1. Search using access() to make sure all partitions of this file exist
   *
   * 	2. Using fopen(filename, "a"), mmap(), write(), do the combination
   * 	
   */
-void combine_file(char *base_filename);
+int* combine_file(char *base_filename, int segment_count, size_t segment_size);
 
 
 
  /**
-  * 
-  * Search for target_filename within the log file specified by log_filename
-  * Related log_file functions (i.e. add, delete) should also be implemented before hand 
+  * Return a size_t array of segment_count + 1 elements
+  * This array is obtained by using malloc(segment_count). It should be freed later.
+  * segment[0] is 0
+  * segment[1] - segment[segment_count] contains the size of each segment
+  *
+  * Mmap() can only map data of size divisible by page_size. If the original file_size \
+  * is not divisible by page_size, we need to pad the original file. 
+  *
+  * The actual padding of file (using ftruncate()) is done in send_file. 
+  *
+  * For instance, if the original file_size is 10 pages, and segment_count is 3:
+  * segment[0] = 0; segment[1] = segment[2] = 3 * page; segment[3] = 4 * page
   *
   * @para
-  * 	log_filename:		Name of the log file
+  * 	file_size:	Size of the entire file
   *
-  * 	target_filename:	Name of the target file. 
-  *
-  * 	total_parts:		The number of segments that the target file should have. \
-  * 	This information is provided by the Scheduling Unit. For instance, if the \
-  * 	Scheduling Unit divides a file into 5 segments, then total_parts should be 5. 
-  * 	This can be used to check if there is a missing segment of the target file.
+  * 	segment_count:	How many segment this file should have
   *
   * @return
-  *	(I dont have a solid idea of what to return right now, work it out later)
-  *	(Maybe write the path of each patition into an output file)
+  * 	Return an arrary containing segment_size based on given para
+  * 	This array should be freed later
+  *
+  * @todo
+  * 	1. Calculate a new file_size that is divisible by page_size
+  *
+  * 	2. Calculate segment_size of every segment (last segment might be larger than others)
+  * 	
   *
   */
-int log_file_search(char *log_filename, char *target_filename, FILE *output_fp, int total_segments)
 
-#endif
+size_t* schedule_segment_size (size_t file_size, int segment_count);
+
