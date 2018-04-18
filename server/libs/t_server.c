@@ -140,7 +140,7 @@ void* t_serve(void* p){
 	int sockfd = *(int*)p;
 
 	pthread_mutex_lock(&m);
-	head = readPacket(sockfd, head);
+	head = readPacket(sockfd, head, NULL, NULL);
 	pthread_mutex_unlock(&m);
 
 	close(sockfd);

@@ -5,7 +5,6 @@
 #ifndef FILE_TRANSFER_H
 #define FILE_TRANSFER_H
 
-#include <unistd.h>
 /**
  * Send a segment (or say part/ section) of the file specified by filename to sockfd.
  *
@@ -25,7 +24,9 @@
  *  	not just a segment of it. Other wise, file_index should start with 1. \
  *  	It marks which segment of the file to be sent.
  *
- *  	file_size: 	Size of the file that will be sent. 
+ *  	file_size: 	Size of the file that will be sent (The original \
+ *  	file can be partitioned into many segments with the same size. file_size \
+ *  	specifies this size)
  *
  * @return
  * 	number of bytes that are actually sent.
@@ -49,7 +50,7 @@ ssize_t send_file(char *filename, int sockfd, int file_index, int file_size);
  * Read data from sockfd and write it to a new file. 
  * Similar to send_file, if file_index is 0 it means an entire file has been sent (no partition)
  * If file_index > 0, we should create a file with indexed file name. \
- * For instance: "alloc1", "alloc2"
+ * For instance: "alloc1", "alloc2", "server2"\
  * This is achieved by using sprintf();
  *
  * @para
@@ -69,70 +70,49 @@ ssize_t send_file(char *filename, int sockfd, int file_index, int file_size);
  *
  * 	2. Read data from sockfd using a buffer. Write to the opened file.
  *
+ * 
+ *
+ *	
  */
 ssize_t recv_file(char *base_filename, int sockfd, int file_index, size_t file_size);
 
  /**
   * Combine all parts of a file into one complete file using mmap()
-  * On success, return NULL
-  * On failure due to missing segments, return an array of int containing the index of the missing segments
-  * This array should be freed after it is no longer of use
   * 
   * @para
-  * 	base_filename:	Name of the final combined file. 
-  *
-  * 	segment_counts:	Total number of partition the file should have. 
-  *
-  * 	segment_size: 	Size of the each segment.
-  *
-  * @return
-  * 	On success, return NULL
-  * 	Else, return an int array of size segment_count containing index of missing segments
-  * 	This array should be freed later
+  * 	base_filename:	Name of the final combined file. Search in log file to find \
+  * 	its partitions/ segments
   *
   * @todo
-  * 	1. Search using access() to make sure all partitions of this file exist
+  * 	1. Search within log file to make sure all partitions of this file exist
   *
   * 	2. Using fopen(filename, "a"), mmap(), write(), do the combination
   * 	
   */
-int* combine_file(char *base_filename, int segment_count);
+void combine_file(char *base_filename);
 
 
 
  /**
-  * Return a size_t array of segment_count elements
-  * This array is obtained by using malloc(segment_count). It should be freed later.
-  * segment[0] - segment[segment_count - 2] contains the size of each regular segment
-  * segment[segment_count - 1] contains the size of the last segment, which might be different\
-  * from other regular segments due to padding.
-  *
-  * Mmap() can only map data of size divisible by page_size. If the original file_size \
-  * is not divisible by page_size, we need to pad the original file. The actual \
-  * padding of file (using ftruncate()) is done in send_file. Here we just calculate the \
-  * segment size.
-  *
-  * For instance, if the original file_size is 10 pages, and segment_count is 3:
-  * segment[0] = segment[1] = 3 * page; segment[2] = 4 * page
+  * 
+  * Search for target_filename within the log file specified by log_filename
+  * Related log_file functions (i.e. add, delete) should also be implemented before hand 
   *
   * @para
-  * 	file_size:	Size of the entire file
+  * 	log_filename:		Name of the log file
   *
-  * 	segment_count:	How many segment this file should have
+  * 	target_filename:	Name of the target file. 
+  *
+  * 	total_parts:		The number of segments that the target file should have. \
+  * 	This information is provided by the Scheduling Unit. For instance, if the \
+  * 	Scheduling Unit divides a file into 5 segments, then total_parts should be 5. 
+  * 	This can be used to check if there is a missing segment of the target file.
   *
   * @return
-  * 	Return an arrary containing segment_size based on given para
-  * 	This array should be freed later
-  *
-  * @todo
-  * 	1. Calculate a new file_size that is divisible by page_size
-  *
-  * 	2. Calculate segment_size of every segment (last segment might be larger than others)
-  * 	
+  *	(I dont have a solid idea of what to return right now, work it out later)
+  *	(Maybe write the path of each patition into an output file)
   *
   */
-
-size_t* schedule_segment_size (size_t file_size, int segment_count);
-
+int log_file_search(char *log_filename, char *target_filename, FILE *output_fp, int total_segments);
 
 #endif
