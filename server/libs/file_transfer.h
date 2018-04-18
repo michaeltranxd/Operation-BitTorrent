@@ -5,6 +5,7 @@
 #ifndef FILE_TRANSFER_H
 #define FILE_TRANSFER_H
 
+#include <unistd.h>
 /**
  * Send a segment (or say part/ section) of the file specified by filename to sockfd.
  *
@@ -24,9 +25,7 @@
  *  	not just a segment of it. Other wise, file_index should start with 1. \
  *  	It marks which segment of the file to be sent.
  *
- *  	file_size: 	Size of the file that will be sent (The original \
- *  	file can be partitioned into many segments with the same size. file_size \
- *  	specifies this size)
+ *  	file_size: 	Size of the file that will be sent. 
  *
  * @return
  * 	number of bytes that are actually sent.
@@ -50,7 +49,7 @@ ssize_t send_file(char *filename, int sockfd, int file_index, int file_size);
  * Read data from sockfd and write it to a new file. 
  * Similar to send_file, if file_index is 0 it means an entire file has been sent (no partition)
  * If file_index > 0, we should create a file with indexed file name. \
- * For instance: "alloc1", "alloc2", "server2"\
+ * For instance: "alloc1", "alloc2"
  * This is achieved by using sprintf();
  *
  * @para
@@ -70,9 +69,6 @@ ssize_t send_file(char *filename, int sockfd, int file_index, int file_size);
  *
  * 	2. Read data from sockfd using a buffer. Write to the opened file.
  *
- * 
- *
- *	
  */
 ssize_t recv_file(char *base_filename, int sockfd, int file_index, size_t file_size);
 
@@ -100,23 +96,24 @@ ssize_t recv_file(char *base_filename, int sockfd, int file_index, size_t file_s
   * 	2. Using fopen(filename, "a"), mmap(), write(), do the combination
   * 	
   */
-int* combine_file(char *base_filename, int segment_count, size_t segment_size);
+int* combine_file(char *base_filename, int segment_count);
 
 
 
  /**
-  * Return a size_t array of segment_count + 1 elements
+  * Return a size_t array of segment_count elements
   * This array is obtained by using malloc(segment_count). It should be freed later.
-  * segment[0] is 0
-  * segment[1] - segment[segment_count] contains the size of each segment
+  * segment[0] - segment[segment_count - 2] contains the size of each regular segment
+  * segment[segment_count - 1] contains the size of the last segment, which might be different\
+  * from other regular segments due to padding.
   *
   * Mmap() can only map data of size divisible by page_size. If the original file_size \
-  * is not divisible by page_size, we need to pad the original file. 
-  *
-  * The actual padding of file (using ftruncate()) is done in send_file. 
+  * is not divisible by page_size, we need to pad the original file. The actual \
+  * padding of file (using ftruncate()) is done in send_file. Here we just calculate the \
+  * segment size.
   *
   * For instance, if the original file_size is 10 pages, and segment_count is 3:
-  * segment[0] = 0; segment[1] = segment[2] = 3 * page; segment[3] = 4 * page
+  * segment[0] = segment[1] = 3 * page; segment[2] = 4 * page
   *
   * @para
   * 	file_size:	Size of the entire file
@@ -137,3 +134,5 @@ int* combine_file(char *base_filename, int segment_count, size_t segment_size);
 
 size_t* schedule_segment_size (size_t file_size, int segment_count);
 
+
+#endif
