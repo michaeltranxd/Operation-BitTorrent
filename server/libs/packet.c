@@ -423,7 +423,8 @@ list* decodePacketNum(int sockfd, char *buf, int packet_num, list* head, int *ta
 			pthread_mutex_lock(&tasks_lock);
 			// all ASK_DL packets have been sent, now wait for server to wake me up
 			// condition wait on the corresponding condition variable
-			pthread_cond_wait(&task_conds[tasks_itr], &tasks_lock);
+			while (tasks_count[tasks_itr] > 0) 
+				pthread_cond_wait(&task_conds[tasks_itr], &tasks_lock);
 			pthread_mutex_unlock(&tasks_lock);
 
 			// now combine the files and resent ASK_DL for missing segments.
@@ -459,7 +460,7 @@ list* decodePacketNum(int sockfd, char *buf, int packet_num, list* head, int *ta
 
 				pthread_mutex_lock(&tasks_lock);
 				while (tasks_count[tasks_itr] > 0) {
-					pthread_cond_wait(&task_conds[peers_itr], &tasks_lock);
+					pthread_cond_wait(&task_conds[tasks_itr], &tasks_lock);
 				}
 				pthread_mutex_unlock(&tasks_lock);
 
@@ -468,8 +469,14 @@ list* decodePacketNum(int sockfd, char *buf, int packet_num, list* head, int *ta
 			}
 			
 			
-
-
+			// now we finished a task, remove the info in tasks_name and tasks_count
+			// wake up the add_task_cond so other tasks can be handled.
+			pthread_mutex_lock(&tasks_lock);
+			tasks_name[tasks_itr] = NULL;
+			// tasks_count[tasks_itr] is already 0
+			pthread_cond_signal(&add_task_cond);
+			pthread_mutex_unlock(&tasks_lock);
+	
 			free(missing_segments);
 			free(peers_ip);
 			free(peers_port);
@@ -600,7 +607,9 @@ list* decodePacketNum(int sockfd, char *buf, int packet_num, list* head, int *ta
 				break;
 			}
 			tasks_count[tasks_itr] --;
-			pthread_cond_broadcast(&tasks_cond[tasks_itr]);
+			if (tasks_count[tasks_itr] == 0) {
+				pthread_cond_broadcast(&tasks_cond[tasks_itr]);
+			}
 			pthread_mutex_unlock(&tasks_lock);
 
 			break;
