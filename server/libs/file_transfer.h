@@ -8,6 +8,10 @@
 #include <unistd.h>
 
 size_t get_filesize (char *filename);
+
+size_t write_to_socket(int sockfd, const char *msg, size_t msg_length);
+
+size_t read_from_socket(int sockfd, const char *msg, size_t msg_length);
 /**
  * Send a segment (or say part/ section) of the file specified by filename to sockfd.
  *
