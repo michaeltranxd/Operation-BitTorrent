@@ -8,6 +8,10 @@
 #include <unistd.h>
 
 size_t get_filesize (char *filename);
+
+size_t write_to_socket(int sockfd, const char *msg, size_t msg_length);
+
+size_t read_from_socket(int sockfd, const char *msg, size_t msg_length);
 /**
  * Send a segment (or say part/ section) of the file specified by filename to sockfd.
  *
@@ -45,7 +49,7 @@ size_t get_filesize (char *filename);
  *  
  * 
  */
-ssize_t send_file(char *filename, int sockfd, int file_index, size_t file_size);
+size_t send_file(char *filename, int sockfd, size_t index, size_t file_size);
 
 /**
  * Read data from sockfd and write it to a new file. 
@@ -59,7 +63,7 @@ ssize_t send_file(char *filename, int sockfd, int file_index, size_t file_size);
  *
  * 	sockfd:		Same as send_file()
  *
- * 	file_index:	Same as send_file()
+ * 	index:	Same as send_file()
  *
  * 	file_size: 	Same as send_file()
  *
@@ -72,7 +76,7 @@ ssize_t send_file(char *filename, int sockfd, int file_index, size_t file_size);
  * 	2. Read data from sockfd using a buffer. Write to the opened file.
  *
  */
-ssize_t recv_file(char *base_filename, int sockfd, int file_index, size_t file_size);
+size_t recv_file(char *base_filename, int sockfd, size_t index, size_t file_size);
 
  /**
   * Combine all parts of a file into one complete file using mmap()

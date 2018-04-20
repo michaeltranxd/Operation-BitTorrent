@@ -128,7 +128,7 @@ int t_server(int argc, char** argv){
 		pthread_t new_thread;
 
 		int* fd = malloc(sizeof(int));
-		*fd = sockfd;
+		*fd = new_fd;
 
 		pthread_create(&new_thread, NULL, t_serve, (void*)fd);
 
@@ -140,7 +140,18 @@ void* t_serve(void* p){
 	int sockfd = *(int*)p;
 
 	pthread_mutex_lock(&m);
+
+	printf("Hold up im reading...\n");
+
 	head = readPacket(sockfd, head, NULL, NULL);
+
+	list* curr = head;
+
+	while(curr != NULL){
+		printf("ip:%s, port:%s\n", curr->ip, curr->port);
+		curr = curr->next;
+	}
+
 	pthread_mutex_unlock(&m);
 
 	close(sockfd);

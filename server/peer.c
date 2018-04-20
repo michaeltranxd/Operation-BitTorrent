@@ -34,6 +34,7 @@ void* client_thread_method(void* ptr){
 	char* port;
 	char* filename;
 	size_t len;
+	memset(buffer, 0, 100);
 
 	sleep(1);
 
@@ -47,19 +48,21 @@ void* client_thread_method(void* ptr){
 
 			port = strtok(NULL, " ");
 
-			filename = buffer;
+			filename = strtok(NULL, " ");
 
-			if(port != NULL){ // only works if port is not null
-				len = strlen(port);
+			if(filename != NULL){ // only works if port is not null
+				len = strlen(filename);
 
-				if(port != NULL && port[len - 1] == '\n')
-					port[len - 1] = '\0';
+				if(filename != NULL && filename[len - 1] == '\n')
+					filename[len - 1] = '\0';
 			}
 
+			printf("hostname:%s port:%s filename:%s\n", hostname, port, filename);
+
 			c_args* args = malloc(sizeof(c_args));
-			args->hostname = hostname;
-			args->port = port;
-			args->filename = filename;
+			args->hostname = strdup(hostname);
+			args->port = strdup(port);
+			args->filename = strdup(filename);
 
 			pthread_t new_thread;
 
@@ -69,6 +72,7 @@ void* client_thread_method(void* ptr){
 			pthread_detach(new_thread);
 
 		}
+		memset(buffer, 0, 100);
 	}
 
 	return ptr;
@@ -87,6 +91,17 @@ int main(int argc, char** argv){
 	argcv* args = malloc(sizeof(argcv));
 	args->argc = argc;
 	args->argv = argv;
+
+	tasks_lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+
+	add_task_cond = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+
+
+
+	int i = 0;
+	for (; i < MAXTASKSCOUNT; i++){
+		task_conds[i] = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+	}
 
 	pthread_create(&server_thread, NULL, server_thread_method, (void*)args);
 

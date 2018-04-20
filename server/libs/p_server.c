@@ -124,7 +124,7 @@ int p_server(int argc, char** argv){
 		pthread_t new_thread;
 
 		int* fd = malloc(sizeof(int));
-		*fd = sockfd;
+		*fd = new_fd;
 
 		pthread_create(&new_thread, NULL, p_serve, (void*)fd);
 

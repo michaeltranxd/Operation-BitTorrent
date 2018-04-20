@@ -1,29 +1,12 @@
 
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <pthread.h>
-
 #include "packet.h"
-#include "client.h"
-#include "file_transfer.h"
 
 #define MAXBUFSIZE 1024
-#define MAXTASKSCOUNT 10
 
 static char *DELIM = ":";
 
 // these mutex objects should be shared between client thread and server thread somehow.
 // Maybe declare them in the main function and pass them into client & server as parameter?
-pthread_mutex_t tasks_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t task_conds[MAXTASKSCOUNT];
-
-for (int i = 0; i < MAXTASKSCOUNT; i++){
-	task_conds[i] = PTHREAD_COND_INITIALIZER;
-}
-pthread_cond_t add_task_cond = PTHREAD_COND_INITIALIZER;
 
 /*
 *
@@ -32,7 +15,7 @@ pthread_cond_t add_task_cond = PTHREAD_COND_INITIALIZER;
 */
 
 // connects to every node in network
-list* connectAll(list* head, char* filename, int* numConnections, char* buf){
+list* connectAll(list* head, char* filename, int* numConnections, char* buf, char* ip){
 	if(head == NULL)
 		return head;
 
@@ -43,6 +26,11 @@ list* connectAll(list* head, char* filename, int* numConnections, char* buf){
 
 	while(curr != NULL){
 		next = curr->next;
+
+//		if(!strcmp(curr->ip, ip)){
+//			curr = next;
+//			continue;
+//		}
 
 		rv = connectAndSend(curr, filename);
 
@@ -55,9 +43,17 @@ list* connectAll(list* head, char* filename, int* numConnections, char* buf){
 //				strcat(buf, filesize);
 //			}
 
+
+			printf("Before add:%s\n", buf);
+
 			char str[256];
+			memset(str, 0, 256);
 			sprintf(str, ":%s:%s", curr->ip, curr->port);
 			strcat(buf, str);
+
+			printf("this is str:%s\n", str);
+
+			printf("After add:%s\n", buf);
 
 			// append good ips to buf
 		}
@@ -77,17 +73,20 @@ long long connectAndSend(list* node, char* filename){
 
 	if (rv > 0) // rv is filesize if node has file, else node would return 0
 		return rv;
-	else if (rv == -1) // failed to connect to node
+	else // failed to connect to node
+		// or filesize is 0
 		return -1;
-	return 0; // no file found
 }
 
 // method that checks if connection is a new connection
 list* newConnection(list* head, char *ip, char *port){
 	list* new_list = malloc(sizeof(list));
 	new_list->ip = ip;
-	new_list->port = ip;
+	new_list->port = port;
 	new_list->next = NULL;
+
+	printf("ip:%s port:%s\n", ip, port);
+
 	if(head == NULL){ // new element should be head;
 		return new_list;
 	}
@@ -183,6 +182,8 @@ int sendHelper(int sockfd, char *packet){
 		return -1;
 	}
 
+	printf("rv:%d sent!\n", rv);
+
 	return rv;
 
 }
@@ -193,20 +194,27 @@ int readOutPacket(int sockfd, char *buf){
 
 	char data_in_byte;
 
-	
+	printf("going to read\n");
+
 	if((read(sockfd, &data_in_byte, 1)) == -1){
+		perror("failed!");
 		return -1;
 	}
+
+	printf("one byte read!\n");
 	
 	int itr = 0;
 	while (data_in_byte != '\n') {
 		buf[itr] = data_in_byte;
 		if (read(sockfd, &data_in_byte, 1) == -1)
 			return -1;
+		printf("haha im stuck\n");
 		itr ++;
 	}
 
 	rv = itr; // rv records the size of packet.
+
+
 
 	return rv;
 }
@@ -214,10 +222,17 @@ int readOutPacket(int sockfd, char *buf){
 // method that server.c will call
 list* readPacket(int sockfd, list* head, int *tasks_count, char **tasks_name){
 	char buf[MAXBUFSIZE];
+	memset(buf, 0, MAXBUFSIZE);
 
 	readOutPacket(sockfd, buf);
 
-	return decodePacket(sockfd, buf, head, tasks_count, tasks_name);
+	list* rv = decodePacket(sockfd, buf, head, tasks_count, tasks_name);
+
+//	shutdown(sockfd, 0); // read shutdowned
+
+	write(sockfd, "OK\n", 3);
+
+	return rv;
 }
 
 // just parsing to find the packet number
@@ -230,6 +245,7 @@ int parse_packet_header(char *buf){
 	int rv = -1;
 
 	if(!strcmp(header, "ASK_REQ")){
+		printf("TRACKER GOT PACKET!!!\n");
 		rv = ASK_REQ;
 	}
 	else if(!strcmp(header, "RESP_REQ")){
@@ -269,9 +285,10 @@ void makePacket(char *buf, char *filename, char *ip, char *port, size_t filesize
 	switch(packet_num){
 		case ASK_REQ:
 			ask_reqPacket(buf, filename, ip, port);
+			printf("packet has been made by requester!\n");
 			break;
 		case RESP_REQ:
-			resp_reqPacket(buf, filename);
+			resp_reqPacket(buf, filename, ip, port);
 			break;
 		case ASK_AVAIL:
 			ask_availPacket(buf, filename);
@@ -280,7 +297,7 @@ void makePacket(char *buf, char *filename, char *ip, char *port, size_t filesize
 			resp_availPacket(buf, filename, filesize);
 			break;
 		case ASK_DL:
-			ask_dlPacket(buf, filename, filesize, index);
+			ask_dlPacket(buf, filename, filesize, index, ip, port);
 			break;
 		case START_SD:
 			start_sdPacket(buf, filename, filesize, index);
@@ -306,6 +323,11 @@ long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port
 
 		long long filesize = atoll(resp_buf);	// buf_copy contains str file_size
 		// <= 0 if file not there, else filesize
+
+		if(filesize <= 0){
+			close(sockfd);
+			return -1;
+		}
 
 		// if packet is yes
 		return filesize;
@@ -375,14 +397,18 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 
 			filename = strtok(NULL, DELIM); // filename
 			ip = strtok(NULL, DELIM); 	// ip
-			port = buf_copy;		// port
+			port = strtok(NULL, DELIM);	// port
+
+			printf("running newConnection()\n");
 
 			head = newConnection(head, ip, port);
 
+			printf("making packet\n");
 			// making RESP_REQ
-			makePacket(buf, filename, NULL, NULL, 0, 0, RESP_REQ);
+			makePacket(buf, filename, ip, port, 0, 0, RESP_REQ);
 
-			head = connectAll(head, filename, &numUsers, buf);
+			printf("connect to all peers\n");
+			head = connectAll(head, filename, &numUsers, buf, ip);
 
 			if (numUsers != 0) {
 				if ((sockfd = getConnection(ip, port)) == -1){ // failed
@@ -393,7 +419,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 				close(sockfd);
 			}
 			else { // no one has file
-
+				printf("no one has file haha\n");
 				// send error messgae back to requester
 
 			}
@@ -407,6 +433,10 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 			// Close connections and wait() till server wakes me up
 			
 			filename = strtok(NULL, DELIM);
+
+			ip = strtok(NULL, DELIM);
+			
+			port = strtok(NULL, DELIM);
 
 			pthread_mutex_lock(&tasks_lock);
 			tasks_itr = find_tasks(tasks_name, filename);
@@ -449,6 +479,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 					continue; // try to connect to next peer
 				}
 
+				// we need our own ip/port
 				// send directly instead of asking p_client
 				sendPacket(sockfd, buf, filename, peers_ip[peers_itr], peers_port[peers_itr], segments[peers_itr], peers_itr, ASK_DL);
 
@@ -509,6 +540,11 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 				missing_segments = combine_file(filename, segment_count);
 			
 			}
+			pthread_mutex_lock(&tasks_lock);
+			tasks_name[tasks_itr] = NULL;
+			// tasks_count[tasks_itr] is already 0
+			pthread_cond_signal(&add_task_cond);
+			pthread_mutex_unlock(&tasks_lock);
 
 
 			free(missing_segments);
@@ -540,7 +576,29 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 			//}
 
 			filename = strtok(NULL, DELIM); // filename
-			filesize = atoi(strtok(NULL, DELIM));
+
+			int file_fd = open(filename, O_RDONLY);
+			if (file_fd == -1) {
+				perror("Failed open()");
+				exit(-1);
+			}
+		//	FILE *file_fp = fdopen(file_fd, "r");
+		//	if (file_fp == NULL) {
+		//		perror("Failed fdopen()");
+		//		exit(-1);
+		//	}
+
+			struct stat s;
+			if (fstat(file_fd, &s) == -1) {
+				perror("Failed fstat()");
+				exit(-1);
+			}
+			size_t filesize = s.st_size;
+			
+			memset(buf, 0, MAXBUFSIZE);
+
+			sendPacket(dl_sockfd, buf, filename, NULL, NULL, filesize, 0, RESP_AVAIL);
+			
 
 			break;
 		case RESP_AVAIL:	// RESP_AVAIL:FILESIZE
@@ -572,6 +630,8 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 			// Call send_file() to send the file, which will return -1 on failure.
 			filename = strtok(NULL, DELIM);
 
+			// ASK_DL:FILENAME:filesize:index:IP:PORT);
+
 			char *filesize_string = strtok(NULL, DELIM);
 			if (sscanf(filesize_string, "%zu", &filesize) == EOF) {
 				perror("Failed sscanf()");
@@ -586,6 +646,10 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 				return NULL;
 			} 
 
+			ip = strtok(NULL, DELIM);
+
+			port = strtok(NULL, DELIM);
+				
 			int sockfd = getConnection(ip, port);
 			if (sockfd == -1) {
 				printf("Failed getConnection()");
@@ -608,7 +672,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 //			}
 
 
-			if (send_file(filename, sockfd, index, filesize) < 0) {
+			if (send_file(filename, sockfd, index, filesize) != filesize) {
 				printf("Failed send_file() for file named %s, index %d\n", filename, index);
 //				free(args);
 				return NULL;
@@ -638,7 +702,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 				return NULL;
 			} 
 
-			if (recv_file(filename, dl_sockfd, index, filesize) != (int)filesize) {
+			if (recv_file(filename, dl_sockfd, index, filesize) != filesize) {
 				printf("Failed recv_file()\n");
 //				free(args);
 				return NULL;
@@ -651,7 +715,9 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 				break;
 			}
 			tasks_count[tasks_itr] --;
-			pthread_cond_broadcast(&task_conds[tasks_itr]);
+			if (tasks_count[tasks_itr] == 0) {
+				pthread_cond_broadcast(&task_conds[tasks_itr]);
+			}
 			pthread_mutex_unlock(&tasks_lock);
 
 			break;
@@ -669,17 +735,22 @@ int ask_reqPacket(char *buf, char *filename, char *ip, char *port){
 
 	sprintf(buf, "%s:%s:%s:%s", header, filename, ip, port);
 
+
+	printf("made ask_req packet:%s\n", buf);
+
 	buf[strlen(buf)] = '\n';
 
 	return 0;
 }
 
-int resp_reqPacket(char* buf, char* filename){
+int resp_reqPacket(char* buf, char* filename, char* req_ip, char* req_port){
 	char* header = "RESP_REQ";
 
-	sprintf(buf, "%s:%s", header, filename);
+	sprintf(buf, "%s:%s:%s:%s", header, filename, req_ip, req_port);
 
-	buf[strlen(buf)] = '\n';
+//	buf[strlen(buf)] = '\n';
+
+	printf("RESP_REQ PACKET:%s\n", buf);
 
 	return 0;
 }
@@ -708,7 +779,7 @@ int resp_availPacket(char *buf, char *filename, size_t filesize){
 	return 0;
 }
 
-int ask_dlPacket(char *buf, char *filename, size_t filesize, size_t index){
+int ask_dlPacket(char *buf, char *filename, size_t filesize, size_t index, char *ip, char *port){
 	// @para filename: name of the target file
 	//
 	// 	filesize: size of the segment
@@ -718,7 +789,7 @@ int ask_dlPacket(char *buf, char *filename, size_t filesize, size_t index){
 	// 	if (index > 0), send the corresponding segment of index
 	char *header = "ASK_DL";
 
-	sprintf(buf, "%s:%s:%zu:%zu", header, filename, filesize, index);
+	sprintf(buf, "%s:%s:%zu:%zu:%s:%s", header, filename, filesize, index, ip, port);
 	
 	buf[strlen(buf)] = '\n';
 

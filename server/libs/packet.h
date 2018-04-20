@@ -7,6 +7,20 @@
 
 #include <stdlib.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <pthread.h>
+#include <fcntl.h>
+
+
+#include "client.h"
+#include "file_transfer.h"
+
+#define MAXBUFSIZE 1024
 
 #define ASK_REQ 		1
 #define RESP_REQ 		2
@@ -15,13 +29,21 @@
 #define ASK_DL			5
 #define START_SD		6
 
+
+#define MAXTASKSCOUNT 10
+
+pthread_mutex_t tasks_lock;
+pthread_cond_t task_conds[MAXTASKSCOUNT];
+
+pthread_cond_t add_task_cond;
+
 typedef struct list{
 	char *ip;
 	char *port;
 	struct list* next;
 }list;
 
-list* connectAll(list* head, char* filename, int* numConnections, char* buf);
+list* connectAll(list* head, char* filename, int* numConnections, char* buf, char* ip);
 long long connectAndSend(list* node, char* filename);
 list* newConnection(list* head, char* ip, char* port);
 
@@ -50,14 +72,14 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int*
 int ask_reqPacket(char *buf, char *filename, char *ip, char *port);
 
 // added a filesize para for this packet
-int resp_reqPacket(char *buf, char *filename);
+int resp_reqPacket(char *buf, char *filename, char* req_ip, char* req_port);
 
 // ignore changes in these two packet
 int ask_availPacket(char *buf, char *filename);
 int resp_availPacket(char *buf, char *filename, size_t filesize);
 
 // major update in these two packets. Delete the "resp_dlPacket", dont need it.
-int ask_dlPacket(char *buf, char *filename, size_t filesize, size_t index);
+int ask_dlPacket(char *buf, char *filename, size_t filesize, size_t index, char* ip, char* port);
 int start_sdPacket(char *buf, char *filename, size_t filesize, size_t index);
 
 #endif

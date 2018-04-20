@@ -70,8 +70,6 @@ int getConnection(char* hostname, char* port){
 	(void)numbytes;
 
 
-	printf("tracker success! Connected!\n");
-
 	return sockfd;
 
 }
@@ -85,7 +83,26 @@ long long client(char* hostname, char* port, char* filename, char* buf, size_t f
 	}
 
 	rv = sendPacket(sockfd, buf, filename, hostname, port, filesize, index, packet_num);	
+
+//	shutdown(sockfd, 1);
+
+	sleep(4);
+
+	memset(buf, 0, strlen(buf));
+
+	if (read(sockfd, buf, 3) == -1){
+		perror("Failed read_ok()");
+		exit(-1);
+	}
+
+	if (strcmp(buf, "OK\n")) {
+		printf("bad response\n");
+		exit(1);
+	}
+
+	// ok was sent back and correct
 	
+
 	close(sockfd);
 
 	return rv;
