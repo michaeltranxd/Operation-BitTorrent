@@ -69,7 +69,7 @@ list* connectAll(list* head, char* filename, int* numConnections, char* buf, cha
 long long connectAndSend(list* node, char* filename){
 	char buf[MAXBUFSIZE];
 
-	long long rv = client(node->ip, node->port, filename, buf, 0, 0, ASK_AVAIL);
+	long long rv = client(node->ip, node->port, NULL, filename, buf, 0, 0, ASK_AVAIL);
 
 	if (rv > 0) // rv is filesize if node has file, else node would return 0
 		return rv;

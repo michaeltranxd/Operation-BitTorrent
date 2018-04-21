@@ -76,7 +76,7 @@ int getConnection(char* hostname, char* port){
 
 
 
-long long client(char* hostname, char* port, char* filename, char* buf, size_t filesize, int index, int packet_num){
+long long client(char* hostname, char* port, char *req_port, char* filename, char* buf, size_t filesize, int index, int packet_num){
 	int sockfd; 
 	long long rv;
 	printf("client: hostname:%s port:%s\n", hostname, port);
@@ -85,7 +85,7 @@ long long client(char* hostname, char* port, char* filename, char* buf, size_t f
 		return -1;
 	}
 
-	rv = sendPacket(sockfd, buf, filename, hostname, port, filesize, index, packet_num);	
+	rv = sendPacket(sockfd, buf, filename, hostname, req_port, filesize, index, packet_num);	
 
 //	shutdown(sockfd, 1);
 
