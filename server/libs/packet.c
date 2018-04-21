@@ -68,6 +68,7 @@ list* connectAll(list* head, char* filename, int* numConnections, char* buf, cha
 // helper function that does the connect and send packet
 long long connectAndSend(list* node, char* filename){
 	char buf[MAXBUFSIZE];
+	memset(buf, 0, MAXBUFSIZE);
 
 	long long rv = client(node->ip, node->port, NULL, filename, buf, 0, 0, ASK_AVAIL);
 
@@ -191,6 +192,8 @@ int readOutPacket(int sockfd, char *buf){
 	int rv = 0;
 
 	char data_in_byte;
+
+	memset(buf, 0, MAXBUFSIZE);
 
 	printf("Starting readOutPacket()\n");
 	printf("socket readOutPacket:%d\n", sockfd);
@@ -593,6 +596,18 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			memset(buf, 0, MAXBUFSIZE);
 
 			sendPacket(dl_sockfd, buf, filename, NULL, NULL, filesize, 0, RESP_AVAIL);
+
+			memset(buf, 0, strlen(buf));
+
+			if (read(dl_sockfd, buf, 3) == -1){
+				perror("Failed read_ok()");
+				exit(-1);
+			}
+
+			if (strcmp(buf, "OK\n")) {
+				printf("bad response\n");
+				exit(1);
+			}
 			
 
 			break;

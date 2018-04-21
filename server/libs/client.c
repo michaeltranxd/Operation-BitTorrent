@@ -98,7 +98,7 @@ long long client(char* hostname, char* port, char *req_port, char* filename, cha
 		exit(-1);
 	}
 
-	if (!strcmp(buf, "OK\n")) {
+	if (strcmp(buf, "OK\n")) {
 		printf("bad response\n");
 		exit(1);
 	}
