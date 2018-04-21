@@ -127,23 +127,26 @@ int t_server(int argc, char** argv){
 
 		pthread_t new_thread;
 
-		int* fd = malloc(sizeof(int));
-		*fd = new_fd;
 
-		pthread_create(&new_thread, NULL, t_serve, (void*)fd);
+		serve_struct *ss = malloc(sizeof(serve_struct));
+		ss -> sockfd = new_fd;
+		ss -> req_ip = strdup(s);
+
+		pthread_create(&new_thread, NULL, t_serve, (void*)ss);
 
 	}
 
 }
 
 void* t_serve(void* p){
-	int sockfd = *(int*)p;
+	int sockfd = (serve_struct*)(p) -> sockfd;
+	char *ip = (serve_struct*)(p) -> req_ip;
 
 	pthread_mutex_lock(&m);
 
 	printf("Hold up im reading...\n");
 
-	head = readPacket(sockfd, head, NULL, NULL);
+	head = readPacket(sockfd, head, ip, NULL, NULL);
 
 	list* curr = head;
 

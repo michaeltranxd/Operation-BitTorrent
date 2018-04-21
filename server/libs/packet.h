@@ -53,10 +53,10 @@ void destroyList(list* head);
 
 int sendHelper(int sockfd, char* packet);
 int readOutPacket(int sockfd, char* buf);
-list* readPacket(int sockfd, list* head, int* tasks_count, char** tasks_name);
+list* readPacket(int sockfd, list* head, char *req_ip, int* tasks_count, char** tasks_name);
 
 int parse_packet_header(char* buf);
-list* decodePacket(int dl_sockfd, char* buf, list* head, int* tasks_count, char**tasks_name);
+list* decodePacket(int dl_sockfd, char* buf, list* head, char *req_ip, int* tasks_count, char**tasks_name);
 void makePacket(char *buf, char *filename, char *ip, char *port, size_t filesize, int index, int packet_num);
 long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, size_t filesize, int index, int packet_num);
 
@@ -65,10 +65,10 @@ long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port
 
 // need to pass in the current sockfd that receives START_SD, so i pass a sockfd into related functions.
 // This is due to how receiving START_SD work. After receiving START_SD packet the server will call recv_file() on the same sockfd, so the server needs to know the sockfd.
-list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int* tasks_count, char** tasks_name);
+list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char *req_ip, int* tasks_count, char** tasks_name);
 
 // types of packet
-int ask_reqPacket(char *buf, char *filename, char *ip, char *port);
+int ask_reqPacket(char *buf, char *filename, char *port);
 
 // added a filesize para for this packet
 int resp_reqPacket(char *buf, char *filename, char* req_ip, char* req_port);

@@ -218,13 +218,13 @@ int readOutPacket(int sockfd, char *buf){
 }
 
 // method that server.c will call
-list* readPacket(int sockfd, list* head, int *tasks_count, char **tasks_name){
+list* readPacket(int sockfd, list* head, char *req_ip, int *tasks_count, char **tasks_name){
 	char buf[MAXBUFSIZE];
 	memset(buf, 0, MAXBUFSIZE);
 
 	readOutPacket(sockfd, buf);
 
-	list* rv = decodePacket(sockfd, buf, head, tasks_count, tasks_name);
+	list* rv = decodePacket(sockfd, buf, head, req_ip, tasks_count, tasks_name);
 
 //	shutdown(sockfd, 0); // read shutdowned
 
@@ -268,11 +268,11 @@ int parse_packet_header(char *buf){
 }
 
 // this method will be running when receiving packets
-list* decodePacket(int dl_sockfd, char *buf, list* head, int *tasks_count, char **tasks_name){
+list* decodePacket(int dl_sockfd, char *buf, list* head, char *req_ip, int *tasks_count, char **tasks_name){
 
 	int packet_num = parse_packet_header(buf);
 
-	return decodePacketNum(dl_sockfd, buf, packet_num, head, tasks_count, tasks_name);
+	return decodePacketNum(dl_sockfd, buf, packet_num, head, req_ip, tasks_count, tasks_name);
 
 }
 
@@ -280,9 +280,11 @@ list* decodePacket(int dl_sockfd, char *buf, list* head, int *tasks_count, char 
 // this method focused on building packets to send
 void makePacket(char *buf, char *filename, char *ip, char *port, size_t filesize, int index, int packet_num){
 	
+
+	memset(buf, 0, MAXBUFSIZE);
 	switch(packet_num){
 		case ASK_REQ:
-			ask_reqPacket(buf, filename, ip, port);
+			ask_reqPacket(buf, filename, port);
 			printf("ASK_REQ packet was made as: %s\n", buf);
 			break;
 		case RESP_REQ:
@@ -369,7 +371,7 @@ int add_tasks(char **tasks_name, char *filename){
 
 // packet_num corresponds to the kinds of packets we have defined
 // this method is designed to be decoding received packets
-list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int *tasks_count, char **tasks_name){
+list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char *req_ip, int *tasks_count, char **tasks_name){
 
 	char *buf_copy = strdup(buf);
 	char *orig = buf_copy; 				// part of cleanup
@@ -399,7 +401,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 			// others to see if they have the files	
 
 			filename = strtok(NULL, DELIM); // filename
-			ip = strtok(NULL, DELIM); 	// ip
+			ip = req_ip; 	// ip
 			port = strtok(NULL, DELIM);	// port
 
 			printf("Starting newConnection() to ip:%s port:%s\n", ip, port);
@@ -718,11 +720,11 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 
 // Below here is the list of packets that can be 'maked'
 
-int ask_reqPacket(char *buf, char *filename, char *ip, char *port){
+int ask_reqPacket(char *buf, char *filename, char *port){
 
 	char* header = "ASK_REQ";
 
-	sprintf(buf, "%s:%s:%s:%s", header, filename, ip, port);
+	sprintf(buf, "%s:%s:%s", header, filename, port);
 
 
 	printf("made ask_req packet:%s\n", buf);

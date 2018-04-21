@@ -72,9 +72,9 @@ void* client_thread_method(void* ptr){
 			args->hostname = strdup(hostname);
 			args->port = strdup(port);
 			args->filename = strdup(filename);
-			args->myip = mca->myip;
-			args->myport = mca->myport;
-
+			args->myip = strdup(mca->myip);
+			args->myport = strdup(mca->myport);
+			
 			pthread_t new_thread;
 
 			// we do not have to worry about error checking
@@ -121,9 +121,9 @@ int main(int argc, char** argv){
 		if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET)
 		{
 			struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
-//			printf("%s: %s\n", tmp->ifa_name, inet_ntoa(pAddr->sin_addr));
+			printf("%s: %s\n", tmp->ifa_name, inet_ntoa(pAddr->sin_addr));
 			mca->myip = inet_ntoa(pAddr->sin_addr);
-			break;
+			//break;
 		}
 
 		tmp = tmp->ifa_next;

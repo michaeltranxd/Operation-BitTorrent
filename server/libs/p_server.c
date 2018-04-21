@@ -135,7 +135,7 @@ int p_server(int argc, char** argv){
 void* p_serve(void* p){
 	int sockfd = *(int*)p;
 
-	readPacket(sockfd, NULL, NULL, NULL);
+	readPacket(sockfd, NULL, NULL, NULL, NULL);
 
 	close(sockfd);
 	free(p);

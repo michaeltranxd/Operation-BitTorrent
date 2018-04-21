@@ -79,6 +79,7 @@ int getConnection(char* hostname, char* port){
 long long client(char* hostname, char* port, char* filename, char* buf, size_t filesize, int index, int packet_num){
 	int sockfd; 
 	long long rv;
+	printf("client: hostname:%s port:%s\n", hostname, port);
 
 	if((sockfd = getConnection(hostname, port)) == -1){ // failed
 		return -1;
@@ -97,7 +98,7 @@ long long client(char* hostname, char* port, char* filename, char* buf, size_t f
 		exit(-1);
 	}
 
-	if (strcmp(buf, "OK\n")) {
+	if (!strcmp(buf, "OK\n")) {
 		printf("bad response\n");
 		exit(1);
 	}

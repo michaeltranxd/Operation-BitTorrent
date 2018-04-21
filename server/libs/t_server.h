@@ -13,8 +13,9 @@
  */
 void sigchld_handler(int s);
 
-struct serve_struct{
+typedef struct serve_struct{
 	int sockfd;
+	char *req_ip;
 }serve_struct;
 
 void* t_serve(void* p);
