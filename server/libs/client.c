@@ -50,7 +50,7 @@ int getConnection(char* hostname, char* port){
 
 		if(connect(sockfd, p->ai_addr, p->ai_addrlen) == -1){
 			close(sockfd);
-			perror("client: connect");
+			perror("(in client.c) Failed connect()");
 			continue;
 		}
 

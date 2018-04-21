@@ -34,7 +34,6 @@
 
 pthread_mutex_t tasks_lock;
 pthread_cond_t task_conds[MAXTASKSCOUNT];
-
 pthread_cond_t add_task_cond;
 
 typedef struct list{

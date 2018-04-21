@@ -85,7 +85,7 @@ list* newConnection(list* head, char *ip, char *port){
 	new_list->port = port;
 	new_list->next = NULL;
 
-	printf("ip:%s port:%s\n", ip, port);
+	printf("Starting newConnection() to ip:%s port:%s\n", ip, port);
 
 	if(head == NULL){ // new element should be head;
 		return new_list;
@@ -194,23 +194,23 @@ int readOutPacket(int sockfd, char *buf){
 
 	char data_in_byte;
 
-	printf("going to read\n");
+	printf("Starting readOutPacket()\n");
 
 	if((read(sockfd, &data_in_byte, 1)) == -1){
 		perror("failed!");
 		return -1;
 	}
 
-	printf("one byte read!\n");
 	
 	int itr = 0;
 	while (data_in_byte != '\n') {
 		buf[itr] = data_in_byte;
 		if (read(sockfd, &data_in_byte, 1) == -1)
 			return -1;
-		printf("haha im stuck\n");
 		itr ++;
 	}
+
+	printf("Content of the packet is %s\n", buf);
 
 	rv = itr; // rv records the size of packet.
 
@@ -285,22 +285,27 @@ void makePacket(char *buf, char *filename, char *ip, char *port, size_t filesize
 	switch(packet_num){
 		case ASK_REQ:
 			ask_reqPacket(buf, filename, ip, port);
-			printf("packet has been made by requester!\n");
+			printf("ASK_REQ packet was made as: %s\n", buf);
 			break;
 		case RESP_REQ:
 			resp_reqPacket(buf, filename, ip, port);
+			printf("RESP_REQ packet was made as: %s\n", buf);
 			break;
 		case ASK_AVAIL:
 			ask_availPacket(buf, filename);
+			printf("ASK_AVAIL packet was made as: %s\n", buf);
 			break;
 		case RESP_AVAIL:
 			resp_availPacket(buf, filename, filesize);
+			printf("RESP_AVAIL packet was made as: %s\n", buf);
 			break;
 		case ASK_DL:
 			ask_dlPacket(buf, filename, filesize, index, ip, port);
+			printf("ASK_DL packet was made as: %s\n", buf);
 			break;
 		case START_SD:
 			start_sdPacket(buf, filename, filesize, index);
+			printf("START_SD packet was made as: %s\n", buf);
 			break;
 	}
 }
@@ -399,15 +404,15 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 			ip = strtok(NULL, DELIM); 	// ip
 			port = strtok(NULL, DELIM);	// port
 
-			printf("running newConnection()\n");
+			printf("Starting newConnection() to ip:%s port:%s\n", ip, port);
 
 			head = newConnection(head, ip, port);
 
-			printf("making packet\n");
+			//printf("making packet\n");
 			// making RESP_REQ
 			makePacket(buf, filename, ip, port, 0, 0, RESP_REQ);
 
-			printf("connect to all peers\n");
+			printf("Starting connectAll() \n");
 			head = connectAll(head, filename, &numUsers, buf, ip);
 
 			if (numUsers != 0) {
@@ -565,15 +570,6 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 			// to open the file and return its size (-1 
 			// on failure). Then send a RESP_AVAIL packet
 			// containing the filesize info back to tracker
-			//filename = strtok(NULL, DELIM);
-			//size_t filesize = get_filesize(filename); // get_filesize is in file_transfer.c
-			//					  // it returns size of the file on success, -1 on failure
-
-			//char buf[MAXBUFSIZE];
-			//if (sendPacket(sockfd, buf, filename, NULL, NULL, filesize, 0, RESP_AVAIL) < 0) {
-			//	printf("Fail sendPacket() for file named %s, packet type %s\n", filename, "RESP_AVAIL");
-			//	return NULL;
-			//}
 
 			filename = strtok(NULL, DELIM); // filename
 
@@ -582,11 +578,6 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, int 
 				perror("Failed open()");
 				exit(-1);
 			}
-		//	FILE *file_fp = fdopen(file_fd, "r");
-		//	if (file_fp == NULL) {
-		//		perror("Failed fdopen()");
-		//		exit(-1);
-		//	}
 
 			struct stat s;
 			if (fstat(file_fd, &s) == -1) {
