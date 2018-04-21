@@ -27,7 +27,6 @@ void* server_thread_method(void* ptr){
 void* multi_client(void* ptr){
 	c_args* args = ptr;
 	char buf[1024];
-	getConnection(args->hostname, args->port);
 	client(args->hostname, args->port,  args->myport, args->filename, buf, 0, 0, ASK_REQ);
 	free(args);
 	return NULL;
