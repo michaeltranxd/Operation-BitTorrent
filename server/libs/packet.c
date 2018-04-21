@@ -193,15 +193,19 @@ int readOutPacket(int sockfd, char *buf){
 	char data_in_byte;
 
 	printf("Starting readOutPacket()\n");
+	printf("socket readOutPacket:%d\n", sockfd);
 
 	if((read(sockfd, &data_in_byte, 1)) == -1){
 		perror("failed!");
 		return -1;
 	}
 
+	printf("Recveived first byte\n");
+
 	
 	int itr = 0;
 	while (data_in_byte != '\n') {
+		printf("char: %c\n", data_in_byte);
 		buf[itr] = data_in_byte;
 		if (read(sockfd, &data_in_byte, 1) == -1)
 			return -1;

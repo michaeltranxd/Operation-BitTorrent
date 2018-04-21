@@ -125,6 +125,8 @@ int t_server(int argc, char** argv){
 		printf("server: got connection from %s\n", s);
 
 
+		printf("socket in t_server:%d\n", new_fd);
+
 		pthread_t new_thread;
 
 
