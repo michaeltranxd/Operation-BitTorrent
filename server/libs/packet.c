@@ -597,19 +597,6 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 			sendPacket(dl_sockfd, buf, filename, NULL, NULL, filesize, 0, RESP_AVAIL);
 
-			memset(buf, 0, strlen(buf));
-
-			if (read(dl_sockfd, buf, 3) == -1){
-				perror("Failed read_ok()");
-				exit(-1);
-			}
-
-			if (strcmp(buf, "OK\n")) {
-				printf("bad response\n");
-				exit(1);
-			}
-			
-
 			break;
 		case RESP_AVAIL:	// RESP_AVAIL:FILESIZE
 			// someone has sent me back their file

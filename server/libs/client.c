@@ -89,19 +89,19 @@ long long client(char* hostname, char* port, char *req_port, char* filename, cha
 
 //	shutdown(sockfd, 1);
 
-	sleep(4);
+//	sleep(4);
 
-	memset(buf, 0, strlen(buf));
-
-	if (read(sockfd, buf, 3) == -1){
-		perror("Failed read_ok()");
-		exit(-1);
-	}
-
-	if (strcmp(buf, "OK\n")) {
-		printf("bad response\n");
-		exit(1);
-	}
+//	memset(buf, 0, strlen(buf));
+//
+//	if (read(sockfd, buf, 3) == -1){
+//		perror("Failed read_ok()");
+//		exit(-1);
+//	}
+//
+//	if (strcmp(buf, "OK\n")) {
+//		printf("bad response\n");
+//		exit(1);
+//	}
 
 	// ok was sent back and correct
 	
