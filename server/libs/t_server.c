@@ -139,8 +139,9 @@ int t_server(int argc, char** argv){
 }
 
 void* t_serve(void* p){
-	int sockfd = (serve_struct*)(p) -> sockfd;
-	char *ip = (serve_struct*)(p) -> req_ip;
+	serve_struct *ss = p;
+	int sockfd = (ss) -> sockfd;
+	char *ip = (ss) -> req_ip;
 
 	pthread_mutex_lock(&m);
 
