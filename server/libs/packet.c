@@ -85,8 +85,6 @@ list* newConnection(list* head, char *ip, char *port){
 	new_list->port = port;
 	new_list->next = NULL;
 
-	printf("Starting newConnection() to ip:%s port:%s\n", ip, port);
-
 	if(head == NULL){ // new element should be head;
 		return new_list;
 	}

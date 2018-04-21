@@ -22,7 +22,15 @@ typedef struct client_args{
 	char* hostname;
 	char* port;
 	char* filename;
+	char* myip;
+	char* myport;
 }c_args;
+
+// user input helper
+typedef struct multi_client_args{
+	char* myport;
+	char* myip;
+}mca;
 
 /**
  *	This method is the threaded method for

@@ -12,6 +12,12 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <sys/types.h>
+#include <ifaddrs.h>
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 void* server_thread_method(void* ptr){
 	argcv* args = ptr;
 	p_server(args->argc, args->argv);
@@ -21,7 +27,8 @@ void* server_thread_method(void* ptr){
 void* multi_client(void* ptr){
 	c_args* args = ptr;
 	char buf[1024];
-	client(args->hostname, args->port, args->filename, buf, 0, 0, ASK_REQ);
+	getConnection(args->hostname, args->port);
+	client(args->myip, args->myport, args->filename, buf, 0, 0, ASK_REQ);
 	free(args);
 	return NULL;
 }
@@ -35,6 +42,8 @@ void* client_thread_method(void* ptr){
 	char* filename;
 	size_t len;
 	memset(buffer, 0, 100);
+
+	mca* mca = ptr;
 
 	sleep(1);
 
@@ -63,6 +72,8 @@ void* client_thread_method(void* ptr){
 			args->hostname = strdup(hostname);
 			args->port = strdup(port);
 			args->filename = strdup(filename);
+			args->myip = mca->myip;
+			args->myport = mca->myport;
 
 			pthread_t new_thread;
 
@@ -96,6 +107,30 @@ int main(int argc, char** argv){
 
 	add_task_cond = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
 
+	struct ifaddrs *addrs, *tmp;
+
+
+	mca* mca = malloc(sizeof(mca));
+	mca->myport = argv[1];
+
+	getifaddrs(&addrs);
+	tmp = addrs;
+
+	while (tmp) 
+	{
+		if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET)
+		{
+			struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
+//			printf("%s: %s\n", tmp->ifa_name, inet_ntoa(pAddr->sin_addr));
+			mca->myip = inet_ntoa(pAddr->sin_addr);
+			break;
+		}
+
+		tmp = tmp->ifa_next;
+	}
+
+	freeifaddrs(addrs);
+
 
 
 	int i = 0;
@@ -107,7 +142,7 @@ int main(int argc, char** argv){
 
 	// After this we got a thread focused on server
 
-	pthread_create(&client_thread, NULL, client_thread_method, (void*)NULL);
+	pthread_create(&client_thread, NULL, client_thread_method, (void*)mca);
 
 	// Below this line is cleanup (we can always pthread_exit(NULL))
 
