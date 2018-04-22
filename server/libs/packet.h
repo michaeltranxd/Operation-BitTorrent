@@ -35,6 +35,8 @@
 pthread_mutex_t tasks_lock;
 pthread_cond_t task_conds[MAXTASKSCOUNT];
 pthread_cond_t add_task_cond;
+char **tasks_name;
+int *tasks_count;
 
 typedef struct list{
 	char *ip;

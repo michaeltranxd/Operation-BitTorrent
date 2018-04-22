@@ -2,8 +2,10 @@
 #include "packet.h"
 
 #define MAXBUFSIZE 1024
+#define MAXTASKSCOUNT 10
 
 static char *DELIM = ":";
+
 
 // these mutex objects should be shared between client thread and server thread somehow.
 // Maybe declare them in the main function and pass them into client & server as parameter?
@@ -364,7 +366,8 @@ long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port
 int find_tasks(char **tasks_name, char *filename) {
 	int itr = 0;
 	while (itr < MAXTASKSCOUNT) {
-		if (strcmp(tasks_name[itr], filename) == 0) {
+		if (tasks_name[itr] == NULL){}
+		else if (strcmp(tasks_name[itr], filename) == 0) {
 			return itr;
 		}
 		itr ++;
@@ -377,11 +380,12 @@ int add_tasks(char **tasks_name, char *filename){
 	int itr = 0;
 	while (itr < MAXTASKSCOUNT) {
 		if (tasks_name[itr] == NULL) {
+			tasks_name[itr] = (char *)malloc((strlen(filename) + 1) * sizeof(char));
 			tasks_name[itr] = filename;
 			return itr;
 		}
 	}
-	printf("Cannot insert filename: %s into tasks_name, reach maximum tasks count\n", filename);
+	printf("Cannot add filename:%s into tasks_name, reach MAXTASKSCOUNT\n", filename);
 	return -1;
 }
 
@@ -460,8 +464,10 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			
 			port = strtok(NULL, DELIM);
 
+			printf("(received RESP_REQ) filename:%s, ip:%s, port:%s\n", filename, ip, port);
 			pthread_mutex_lock(&tasks_lock);
 			tasks_itr = find_tasks(tasks_name, filename);
+			printf("finished find_tasks() for filename:%s\n", filename);
 			if (tasks_itr == -1)
 				tasks_itr = add_tasks(tasks_name, filename);
 			if (tasks_itr == -1) 

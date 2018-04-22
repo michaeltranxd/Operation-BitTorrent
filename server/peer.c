@@ -106,6 +106,10 @@ int main(int argc, char** argv){
 
 	add_task_cond = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
 
+	tasks_name = (char **)malloc(sizeof(char *) * MAXTASKSCOUNT);
+
+	tasks_count = (int *)malloc(sizeof(int) * MAXTASKSCOUNT);
+
 	struct ifaddrs *addrs, *tmp;
 
 
