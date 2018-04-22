@@ -62,6 +62,9 @@ list* connectAll(list* head, char* filename, int* numConnections, char* buf, cha
 
 		curr = next;
 	}
+
+	strcat(buf, "\n");
+
 	return head;
 }
 
@@ -71,6 +74,8 @@ long long connectAndSend(list* node, char* filename){
 	memset(buf, 0, MAXBUFSIZE);
 
 	long long rv = client(node->ip, node->port, NULL, filename, buf, 0, 0, ASK_AVAIL);
+
+	printf("connectAndSend rv is: %llu\n", rv);
 
 	if (rv > 0) // rv is filesize if node has file, else node would return 0
 		return rv;
@@ -331,10 +336,15 @@ long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port
 
 		readOutPacket(sockfd, resp_buf);
 
-		strtok(resp_buf, DELIM);
+		strtok(resp_buf, DELIM); // header
+		strtok(NULL, DELIM);	 // filename
+		char* char_fs = strtok(NULL, DELIM); // filesize
 
-		long long filesize = atoll(resp_buf);	// buf_copy contains str file_size
+		printf("resp_buf: %s\n", char_fs);
+
+		long long filesize = atoll(char_fs);	// buf_copy contains str file_size
 		// <= 0 if file not there, else filesize
+		printf("atoll returned filesize: %llu\n", filesize);
 
 		if(filesize <= 0){
 			close(sockfd);
