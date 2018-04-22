@@ -365,7 +365,9 @@ long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port
 
 int find_tasks(char **tasks_name, char *filename) {
 	int itr = 0;
+	printf("(find_tasks) filename is %s\n", filename);
 	while (itr < MAXTASKSCOUNT) {
+		printf("(find_tasks)looking at tasks_name[%d], which is %s\n", itr, tasks_name[itr]);
 		if (tasks_name[itr] == NULL){}
 		else if (strcmp(tasks_name[itr], filename) == 0) {
 			return itr;
@@ -378,12 +380,15 @@ int find_tasks(char **tasks_name, char *filename) {
 
 int add_tasks(char **tasks_name, char *filename){
 	int itr = 0;
+	printf("(add_tasks) filename is %s\n", filename);
 	while (itr < MAXTASKSCOUNT) {
+		printf("(add_tasks) looking at tasks_name[%d]\n", itr);
 		if (tasks_name[itr] == NULL) {
-			tasks_name[itr] = (char *)malloc((strlen(filename) + 1) * sizeof(char));
-			tasks_name[itr] = filename;
+			tasks_name[itr] = strndup(filename, strlen(filename));
+			
 			return itr;
 		}
+		itr ++;
 	}
 	printf("Cannot add filename:%s into tasks_name, reach MAXTASKSCOUNT\n", filename);
 	return -1;
@@ -466,6 +471,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 			printf("(received RESP_REQ) filename:%s, ip:%s, port:%s\n", filename, ip, port);
 			pthread_mutex_lock(&tasks_lock);
+			printf("start find_tasks()\n");
 			tasks_itr = find_tasks(tasks_name, filename);
 			printf("finished find_tasks() for filename:%s\n", filename);
 			if (tasks_itr == -1)
