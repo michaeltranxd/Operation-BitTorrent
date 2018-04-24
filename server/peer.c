@@ -1,9 +1,7 @@
 
 #include "p_server.h"
 #include "client.h"
-
 #include "peer.h"
-
 #include "packet.h"
 
 #include <pthread.h>
@@ -17,6 +15,8 @@
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+
 
 void* server_thread_method(void* ptr){
 	argcv* args = ptr;
@@ -102,23 +102,16 @@ int main(int argc, char** argv){
 	args->argc = argc;
 	args->argv = argv;
 
-	tasks_lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-
+	task_lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 	add_task_cond = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
-
-	tasks_name = (char **)malloc(sizeof(char *) * MAXTASKSCOUNT);
-
+	tasks_name = malloc(sizeof(char *) * MAXTASKSCOUNT);
+	tasks_count = malloc(sizeof(int) * MAXTASKSCOUNT);
 	int i = 0;
 	for (; i < MAXTASKSCOUNT; i ++) {
-		tasks_name[i] = "ughh";
+		tasks_name[i] = NULL;
+		task_conds[i] = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
 		printf("tasks_name[%d] is %s\n", i, tasks_name[i]);
 	}
-	tasks_count = (int *)malloc(sizeof(int) * MAXTASKSCOUNT);
-
-	for (i = 0; i < MAXTASKSCOUNT; i ++){
-		task_conds[i] = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
-	}
-
 	struct ifaddrs *addrs, *tmp;
 
 

@@ -1,5 +1,6 @@
 
 #include "t_server.h"
+#include "packet.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>

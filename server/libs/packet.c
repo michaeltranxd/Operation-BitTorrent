@@ -1,12 +1,19 @@
 
 #include "packet.h"
+#include "../peer.h"
 
 #define MAXBUFSIZE 1024
 #define MAXTASKSCOUNT 10
+#define MAXPEERSCOUNT 8
 
 static char *DELIM = ":";
 
 
+char **tasks_name;
+int *tasks_count;
+pthread_mutex_t task_lock;
+pthread_cond_t task_conds[MAXTASKSCOUNT];
+pthread_cond_t add_task_cond;
 // these mutex objects should be shared between client thread and server thread somehow.
 // Maybe declare them in the main function and pass them into client & server as parameter?
 
@@ -363,29 +370,37 @@ long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port
 	return rv;
 }
 
-int find_tasks(char **tasks_name, char *filename) {
+static void print_tasks_name() {
+	int i = 0;
+	for (; i < MAXTASKSCOUNT; i ++) {
+		printf("task name at tasks_name[%d] is: %s\n", i, tasks_name[i]);
+	}
+}
+
+static int find_task(char *filename) {
 	int itr = 0;
-	printf("(find_tasks) filename is %s\n", filename);
-	while (itr < MAXTASKSCOUNT) {
-		printf("(find_tasks)looking at tasks_name[%d], which is %s\n", itr, tasks_name[itr]);
+	printf("(find_task) filename is %s\n", filename);
+	//print_tasks_name();
+	for (; itr < MAXTASKSCOUNT; itr ++) {
+		//printf("(find_task)looking at tasks_name[%d]\n", itr);
+		//printf("(find_task)looking at tasks_name: %s\n", tasks_name[itr]);
 		if (tasks_name[itr] == NULL){}
 		else if (strcmp(tasks_name[itr], filename) == 0) {
 			return itr;
 		}
-		itr ++;
 	}
 	printf("Cannot find tasks_itr given filename: %s\n", filename);
 	return -1;
 }
 
-int add_tasks(char **tasks_name, char *filename){
+static int add_task(char *filename){
 	int itr = 0;
-	printf("(add_tasks) filename is %s\n", filename);
+	printf("(add_task) filename is %s\n", filename);
 	while (itr < MAXTASKSCOUNT) {
-		printf("(add_tasks) looking at tasks_name[%d]\n", itr);
+		//printf("(add_task) looking at tasks_name[%d]\n", itr);
 		if (tasks_name[itr] == NULL) {
-			tasks_name[itr] = strndup(filename, strlen(filename));
-			
+			//tasks_name[itr] = strndup(filename, strlen(filename));
+			tasks_name[itr] = filename;
 			return itr;
 		}
 		itr ++;
@@ -469,27 +484,29 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			
 			port = strtok(NULL, DELIM);
 
-			printf("(received RESP_REQ) filename:%s, ip:%s, port:%s\n", filename, ip, port);
-			pthread_mutex_lock(&tasks_lock);
-			printf("start find_tasks()\n");
-			tasks_itr = find_tasks(tasks_name, filename);
-			printf("finished find_tasks() for filename:%s\n", filename);
-			if (tasks_itr == -1)
-				tasks_itr = add_tasks(tasks_name, filename);
-			if (tasks_itr == -1) 
-				// we reach MAXTASKSCOUNT, wait till there's a spot in tasks_name so i can add task
-				pthread_cond_wait(&add_task_cond, &tasks_lock);
-			pthread_mutex_unlock(&tasks_lock);
-
 			filesize_string = strtok(NULL, DELIM);
 			if (sscanf(filesize_string, "%zu", &filesize) == EOF) {
 				perror("Failed sscanf()");
 //				free(args);
 				return NULL;
 			} 
+
+			printf("(received RESP_REQ) filename:%s, ip:%s, port:%s\n", filename, ip, port);
+			pthread_mutex_lock(&task_lock);
+			printf("start find_task()\n");
+			print_tasks_name();
+			tasks_itr = find_task(filename);
+			printf("finished find_task() for filename:%s\n", filename);
+			if (tasks_itr == -1)
+				tasks_itr = add_task(filename);
+			if (tasks_itr == -1) 
+				// we reach MAXTASKSCOUNT, wait till there's a spot in tasks_name so i can add task
+				pthread_cond_wait(&add_task_cond, &task_lock);
+			pthread_mutex_unlock(&task_lock);
+
 			
-			char **peers_ip = (char **)malloc(32 * sizeof(char *));
-			char **peers_port = (char **) malloc(32 * sizeof(char *));
+			char **peers_ip = (char **)malloc(MAXPEERSCOUNT * sizeof(char *));
+			char **peers_port = (char **) malloc(MAXPEERSCOUNT * sizeof(char *));
 
 			char *token;
 			int peers_itr = 0;
@@ -498,6 +515,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				token = strtok(NULL, DELIM);
 				peers_port[peers_itr] = token;
 				peers_itr ++;
+				printf("peers_ip[%d] is %s, peers_port[%d] is %s\n", peers_itr, peers_ip[peers_itr], peers_itr, peers_port[peers_itr]);
 			}
 			int segment_count = peers_itr;
 			size_t *segments = (size_t *)malloc(segment_count * sizeof(size_t)); // records size of each segment
@@ -510,6 +528,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				sockfd = getConnection(peers_ip[peers_itr], peers_port[peers_itr]);
 				if (sockfd == -1) {
 					perror("Failed getConnection()");
+					peers_itr ++;
 					continue; // try to connect to next peer
 				}
 
@@ -528,11 +547,11 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 				peers_itr ++;
 			}
-			pthread_mutex_lock(&tasks_lock);
+			pthread_mutex_lock(&task_lock);
 			// all ASK_DL packets have been sent, now wait for server to wake me up
 			// condition wait on the corresponding condition variable
-			pthread_cond_wait(&task_conds[tasks_itr], &tasks_lock);
-			pthread_mutex_unlock(&tasks_lock);
+			pthread_cond_wait(&task_conds[tasks_itr], &task_lock);
+			pthread_mutex_unlock(&task_lock);
 
 			// now combine the files and resent ASK_DL for missing segments.
 			// combine_file() will malloc an int* that records the indexs of the missing segments
@@ -564,21 +583,21 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 					miss_itr ++;
 				}
 
-				pthread_mutex_lock(&tasks_lock);
+				pthread_mutex_lock(&task_lock);
 				while (tasks_count[tasks_itr] > 0) {
-					pthread_cond_wait(&task_conds[peers_itr], &tasks_lock);
+					pthread_cond_wait(&task_conds[peers_itr], &task_lock);
 				}
-				pthread_mutex_unlock(&tasks_lock);
+				pthread_mutex_unlock(&task_lock);
 
 				free(missing_segments);
 				missing_segments = combine_file(filename, segment_count);
 			
 			}
-			pthread_mutex_lock(&tasks_lock);
+			pthread_mutex_lock(&task_lock);
 			tasks_name[tasks_itr] = NULL;
 			// tasks_count[tasks_itr] is already 0
 			pthread_cond_signal(&add_task_cond);
-			pthread_mutex_unlock(&tasks_lock);
+			pthread_mutex_unlock(&task_lock);
 
 
 			free(missing_segments);
@@ -726,18 +745,18 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 //				free(args);
 				return NULL;
 			}
-			pthread_mutex_lock(&tasks_lock);
-			tasks_itr = find_tasks(tasks_name, filename);
+			pthread_mutex_lock(&task_lock);
+			tasks_itr = find_task(filename);
 			if (tasks_itr == -1) {
-				printf("Failed find_tasks(): task is not in the tasks array");
-				pthread_mutex_unlock(&tasks_lock);
+				printf("Failed find_task(): task is not in the tasks array");
+				pthread_mutex_unlock(&task_lock);
 				break;
 			}
 			tasks_count[tasks_itr] --;
 			if (tasks_count[tasks_itr] == 0) {
 				pthread_cond_broadcast(&task_conds[tasks_itr]);
 			}
-			pthread_mutex_unlock(&tasks_lock);
+			pthread_mutex_unlock(&task_lock);
 
 			break;
 	}
@@ -824,3 +843,4 @@ int start_sdPacket(char *buf, char *filename, size_t filesize, size_t index){
 
 	return 0;
 }
+

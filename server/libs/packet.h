@@ -32,11 +32,11 @@
 
 #define MAXTASKSCOUNT 10
 
-pthread_mutex_t tasks_lock;
-pthread_cond_t task_conds[MAXTASKSCOUNT];
-pthread_cond_t add_task_cond;
-char **tasks_name;
-int *tasks_count;
+extern pthread_mutex_t task_lock;
+extern pthread_cond_t task_conds[MAXTASKSCOUNT];
+extern pthread_cond_t add_task_cond;
+extern char **tasks_name;
+extern int *tasks_count;
 
 typedef struct list{
 	char *ip;
@@ -63,6 +63,8 @@ void makePacket(char *buf, char *filename, char *ip, char *port, size_t filesize
 long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, size_t filesize, int index, int packet_num);
 
 // changed the way of reading packet (it is read byte by byte now)
+
+
 
 
 // need to pass in the current sockfd that receives START_SD, so i pass a sockfd into related functions.
