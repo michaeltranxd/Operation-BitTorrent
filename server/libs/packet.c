@@ -529,9 +529,11 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			char **peers_ip = (char **)malloc(MAXPEERSCOUNT * sizeof(char *));
 			char **peers_port = (char **) malloc(MAXPEERSCOUNT * sizeof(char *));
 
+			printf("finished malloc peers_ip and peers_port\n");
 			char *token;
 			int peers_itr = 0;
 			while ((token = strtok(NULL, DELIM)) != NULL) {
+				printf("token is parsed\n");
 				peers_ip[peers_itr] = token;
 				token = strtok(NULL, DELIM);
 				peers_port[peers_itr] = token;
