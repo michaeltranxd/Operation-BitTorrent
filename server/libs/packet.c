@@ -36,21 +36,23 @@ list* connectAll(list* head, char* filename, int* numConnections, char* buf, cha
 	while(curr != NULL){
 		next = curr->next;
 
+		printf("connectAll check\n");
 		if(!strcmp(curr->ip, ip)){
 			curr = next;
 			continue;
 		}
+		printf("not requester\n");
 
 		rv = connectAndSend(curr, filename);
 
 		if (rv > 0) {
 			(*numConnections)++;
 
-//			if (*numConnections == 1) { // first connection, add filesize to buf
-//				char filesize[256];
-//				sprintf(filesize, ":%lld", rv);
-//				strcat(buf, filesize);
-//			}
+			if (*numConnections == 1) { // first connection, add filesize to buf
+				char filesize[256];
+				sprintf(filesize, ":%lld", rv);
+				strcat(buf, filesize);
+			}
 
 
 			printf("Before add:%s\n", buf);
@@ -82,6 +84,8 @@ long long connectAndSend(list* node, char* filename){
 	char buf[MAXBUFSIZE];
 	memset(buf, 0, MAXBUFSIZE);
 
+	printf("connecting to peer at %s %s\n", node->ip, node->port);
+
 	long long rv = client(node->ip, node->port, NULL, filename, buf, 0, 0, ASK_AVAIL);
 
 	printf("connectAndSend rv is: %llu\n", rv);
@@ -96,8 +100,8 @@ long long connectAndSend(list* node, char* filename){
 // method that checks if connection is a new connection
 list* newConnection(list* head, char *ip, char *port){
 	list* new_list = malloc(sizeof(list));
-	new_list->ip = ip;
-	new_list->port = port;
+	new_list->ip = strdup(ip);
+	new_list->port = strdup(port);
 	new_list->next = NULL;
 
 	if(head == NULL){ // new element should be head;
@@ -162,7 +166,7 @@ list* findConnection(list* head, char *ip){
 	if(curr == NULL)
 		return NULL;
 
-	while(curr->next != NULL){
+	while(curr != NULL){
 		if(!strcmp(curr->ip, ip)){
 			return curr;
 		}
@@ -449,6 +453,15 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 			head = newConnection(head, ip, port);
 
+			printf("PRINTING LIST!\n");
+			list* curr = head;
+			while(curr != NULL){
+				printf("%s\n", curr->ip);
+				printf("%s\n", curr->port);
+				curr = curr->next;
+			}
+			printf("PRINTING LIST!\n");
+
 			//printf("making packet\n");
 			// making RESP_REQ
 			makePacket(buf, filename, ip, port, 0, 0, RESP_REQ);
@@ -457,11 +470,17 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			head = connectAll(head, filename, &numUsers, buf, ip);
 
 			if (numUsers != 0) {
+				printf("connecting back to requester!\n");
 				if ((sockfd = getConnection(ip, port)) == -1){ // failed
 					break;
 				}
 
 				sendHelper(sockfd, buf);
+
+				printf("%s\n", buf);
+
+				printf("sent packet to requester RESP_REQ\n");
+
 				close(sockfd);
 			}
 			else { // no one has file
@@ -633,6 +652,8 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				exit(-1);
 			}
 			size_t filesize = s.st_size;
+
+			close(file_fd);
 			
 			memset(buf, 0, MAXBUFSIZE);
 
@@ -710,11 +731,12 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 //			}
 
 
-			if (send_file(filename, sockfd, index, filesize) != filesize) {
-				printf("Failed send_file() for file named %s, index %d\n", filename, index);
+			send_file(filename, sockfd, index, filesize);
+//			if (send_file(filename, sockfd, index, filesize) != filesize) {
+//				printf("Failed send_file() for file named %s, index %d\n", filename, index);
 //				free(args);
-				return NULL;
-			}
+//				return NULL;
+//			}
 
 			if (close(sockfd) == -1) {
 				perror("Failed close()");
