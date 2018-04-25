@@ -643,23 +643,26 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 			filename = strtok(NULL, DELIM); // filename
 
+			size_t filesize = 0;
+
 			int file_fd = open(filename, O_RDONLY);
 			if (file_fd == -1) {
 				perror("Failed open()");
-				exit(-1);
+			}
+			else{
+
+				struct stat s;
+				if (fstat(file_fd, &s) == -1) {
+					perror("Failed fstat()");
+					exit(-1);
+				}
+				filesize = s.st_size;
+
+				close(file_fd);
+				
 			}
 
-			struct stat s;
-			if (fstat(file_fd, &s) == -1) {
-				perror("Failed fstat()");
-				exit(-1);
-			}
-			size_t filesize = s.st_size;
-
-			close(file_fd);
-			
 			memset(buf, 0, MAXBUFSIZE);
-
 			sendPacket(dl_sockfd, buf, filename, NULL, NULL, filesize, 0, RESP_AVAIL);
 
 			break;
