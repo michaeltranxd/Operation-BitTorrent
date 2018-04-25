@@ -53,10 +53,16 @@ void* client_thread_method(void* ptr){
 		if(fgets(buffer, 100, stdin) != NULL){
 
 			hostname = strtok(buffer, " ");
+			if(hostname == NULL)
+				continue;
 
 			port = strtok(NULL, " ");
+			if(port == NULL)
+				continue;
 
 			filename = strtok(NULL, " ");
+			if(filename == NULL)
+				continue;
 
 			if(filename != NULL){ // only works if port is not null
 				len = strlen(filename);

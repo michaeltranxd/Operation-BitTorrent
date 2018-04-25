@@ -44,11 +44,15 @@ int getConnection(char* hostname, char* port){
 	// loop through all the results and connect to the first we can
 	for(p = servinfo; p != NULL; p = p->ai_next){
 		if((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1){
+			printf("client:socket\n");
 			perror("client: socket");
 			continue;
 		}
 
+		printf("ha\n");
+
 		if(connect(sockfd, p->ai_addr, p->ai_addrlen) == -1){
+			printf("closed:socket\n");
 			close(sockfd);
 			perror("(in client.c) Failed connect()");
 			continue;
@@ -57,10 +61,15 @@ int getConnection(char* hostname, char* port){
 		break;
 	}
 
+	printf("p == NULL\n");
+
 	if(p == NULL){
 		fprintf(stderr, "client: failed to connect\n");
 		return -1;
 	}
+
+
+	printf("inet_ntop\n");
 
 	inet_ntop(p->ai_family, get_in_addr((struct sockaddr*)p->ai_addr), s, sizeof s);
 	printf("client: connecting to %s\n", s);
@@ -79,11 +88,13 @@ int getConnection(char* hostname, char* port){
 long long client(char* hostname, char* port, char *req_port, char* filename, char* buf, size_t filesize, int index, int packet_num){
 	int sockfd; 
 	long long rv;
-	printf("client: hostname:%s port:%s\n", hostname, port);
 
+	printf("client: hostname:%s port:%s\n", hostname, port);
 	if((sockfd = getConnection(hostname, port)) == -1){ // failed
+		printf("failed! sockfd:%d\n", sockfd);
 		return -1;
 	}
+	printf("clear!\n");
 
 	rv = sendPacket(sockfd, buf, filename, hostname, req_port, filesize, index, packet_num);	
 
