@@ -36,10 +36,10 @@ list* connectAll(list* head, char* filename, int* numConnections, char* buf, cha
 	while(curr != NULL){
 		next = curr->next;
 
-//		if(!strcmp(curr->ip, ip)){
-//			curr = next;
-//			continue;
-//		}
+		if(!strcmp(curr->ip, ip)){
+			curr = next;
+			continue;
+		}
 
 		rv = connectAndSend(curr, filename);
 
