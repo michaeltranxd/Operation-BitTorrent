@@ -52,7 +52,7 @@ list* connectAll(list* head, char* filename, int* numConnections, char* buf, cha
 				char filesize[256];
 				sprintf(filesize, ":%lld", rv);
 				strcat(buf, filesize);
-			}
+		}
 
 
 			printf("Before add:%s\n", buf);
@@ -88,7 +88,7 @@ long long connectAndSend(list* node, char* filename){
 
 	long long rv = client(node->ip, node->port, NULL, filename, buf, 0, 0, ASK_AVAIL);
 
-	printf("connectAndSend rv is: %llu\n", rv);
+	printf("connectAndSend rv is: %lld\n", rv);
 
 	if (rv >= 0) // rv is filesize if node has file, else node would return 0
 		return rv;
@@ -359,7 +359,7 @@ long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port
 		// <= 0 if file not there, else filesize
 		printf("atoll returned filesize: %llu\n", filesize);
 
-		if(filesize <= 0){
+		if(filesize < 0){
 			close(sockfd);
 			return -1;
 		}
