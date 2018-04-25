@@ -405,6 +405,7 @@ static int add_task(char *filename){
 		if (tasks_name[itr] == NULL) {
 			//tasks_name[itr] = strndup(filename, strlen(filename));
 			tasks_name[itr] = filename;
+			printf("return itr %d %s\n", itr, tasks_name[itr]);
 			return itr;
 		}
 		itr ++;
@@ -521,6 +522,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			if (tasks_itr == -1) 
 				// we reach MAXTASKSCOUNT, wait till there's a spot in tasks_name so i can add task
 				pthread_cond_wait(&add_task_cond, &task_lock);
+			printf("CONDWAIT\n");
 			pthread_mutex_unlock(&task_lock);
 
 			
@@ -539,7 +541,8 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			int segment_count = peers_itr;
 			size_t *segments = (size_t *)malloc(segment_count * sizeof(size_t)); // records size of each segment
 			schedule_segment_size(segments, filesize, segment_count);
-			
+		
+			printf("Segment size after %zd\n", segments[0]);	
 			peers_itr = 0;
 			sockfd = 0;
 			while (peers_itr < segment_count) {
@@ -553,7 +556,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 				// we need our own ip/port
 				// send directly instead of asking p_client
-				sendPacket(sockfd, buf, filename, peers_ip[peers_itr], peers_port[peers_itr], segments[peers_itr], peers_itr, ASK_DL);
+				sendPacket(sockfd, buf, filename, ip, port, segments[peers_itr], peers_itr, ASK_DL);
 
 //				if (p_client(sockfd, peers_ip[peers_itr], peers_port[peers_itr], filename, buf, segments[peers_itr], peers_itr, ASK_DL) != 0) {
 					// p_client send ASK_DL to the target peer given sockfd
@@ -762,12 +765,15 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				return NULL;
 			} 
 
+			printf("About to receive\n");
 			if (recv_file(filename, dl_sockfd, index, filesize) != filesize) {
 				printf("Failed recv_file()\n");
 //				free(args);
 				return NULL;
 			}
+			printf("BEFORE MUTEX\n");
 			pthread_mutex_lock(&task_lock);
+			printf("AFTER MUTEX\n");
 			tasks_itr = find_task(filename);
 			if (tasks_itr == -1) {
 				printf("Failed find_task(): task is not in the tasks array");

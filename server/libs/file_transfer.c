@@ -183,7 +183,9 @@ size_t recv_file(char* base_filename, int sockfd, size_t index, size_t filesize)
 	size_t bytes_recv = 0;
 	size_t total_bytes_recv = 0;
 	while (1) {
+		printf("about to receive\n");
 		bytes_recv = read_from_socket(sockfd, buff, MAXDATASIZE);
+		printf("RECEIVED %s\n", buff);
 
 		if (bytes_recv == (size_t)-1) {
 			if (errno == EINTR) {}
@@ -208,6 +210,7 @@ size_t recv_file(char* base_filename, int sockfd, size_t index, size_t filesize)
 			//printf ("Reach of file, bytes_recv == 0\n");
 			else {
 				printf("Reading less data than supposed to, total_bytes_recv %zu, filesize %zu\n", total_bytes_recv, filesize);
+				break;
 			}
 		}
 	}
@@ -343,8 +346,9 @@ void schedule_segment_size (size_t *segments, size_t filesize, int segment_count
 	size_t last_segment_size = (page_count % segment_count) * page_size;
 
 	int itr = 0;
-	while (itr < segment_count - 1) {
+	while (itr < segment_count) {
 		segments[itr] = regular_segment_size;
+		printf("segment size %zd\n", segments[itr]);
 		itr ++;
 	}
 	segments[itr] = last_segment_size;
