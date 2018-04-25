@@ -90,7 +90,7 @@ long long connectAndSend(list* node, char* filename){
 
 	printf("connectAndSend rv is: %llu\n", rv);
 
-	if (rv > 0) // rv is filesize if node has file, else node would return 0
+	if (rv >= 0) // rv is filesize if node has file, else node would return 0
 		return rv;
 	else // failed to connect to node
 		// or filesize is 0
