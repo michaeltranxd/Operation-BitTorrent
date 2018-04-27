@@ -374,10 +374,10 @@ long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port
 	return rv;
 }
 
-static void print_tasks_name() {
+static void print_tasks_info() {
 	int i = 0;
 	for (; i < MAXTASKSCOUNT; i ++) {
-		printf("task name at tasks_name[%d] is: %s\n", i, tasks_name[i]);
+		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", i, tasks_name[i], i, tasks_count[i]);
 	}
 }
 
@@ -534,7 +534,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			// initialize corresponding tasks_name[] and tasks_count[]
 			pthread_mutex_lock(&task_lock);
 			printf("(received RESP_REQ) Start print_tasks_name() and find_task()\n");
-			print_tasks_name();
+			print_tasks_info();
 			tasks_itr = find_task(filename);
 			if (tasks_itr == -1)
 				printf("(received RESP_REQ) find_task() returns -1, try add_task()");
@@ -581,6 +581,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				peers_itr ++;
 			}
 			printf("Finished sendPacket() to all available peers\n");
+			print_tasks_info();
 			pthread_mutex_lock(&task_lock);
 			// all ASK_DL packets have been sent, now wait for server to wake me up
 			// condition wait on the corresponding condition variable

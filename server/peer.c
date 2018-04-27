@@ -115,6 +115,7 @@ int main(int argc, char** argv){
 	int i = 0;
 	for (; i < MAXTASKSCOUNT; i ++) {
 		tasks_name[i] = NULL;
+		tasks_count = 0;
 		task_conds[i] = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
 		printf("tasks_name[%d] is %s\n", i, tasks_name[i]);
 	}
