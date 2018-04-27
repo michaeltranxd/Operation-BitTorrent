@@ -633,12 +633,15 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 					miss_itr ++;
 				}
-
+				printf("Start mutex_lock(), peers_itr is %d\n", peers_itr);
 				pthread_mutex_lock(&task_lock);
+				printf("Entered mutex_lock()\n");
 				while (tasks_count[tasks_itr] > 0) {
 					pthread_cond_wait(&task_conds[peers_itr], &task_lock);
 				}
+				printf("Finished cond_wait()\n");
 				pthread_mutex_unlock(&task_lock);
+				printf("Finished mutex_unlock()\n");
 
 				free(missing_segments);
 				printf("Start combine_file() for missing segments\n");
