@@ -112,6 +112,7 @@ int main(int argc, char** argv){
 	pthread_cond_init(&add_task_cond, NULL);
 	tasks_name = malloc(sizeof(char *) * MAXTASKSCOUNT);
 	tasks_count = malloc(sizeof(int) * MAXTASKSCOUNT);
+	task_conds = malloc(sizeof(pthread_cond_t) * MAXTASKSCOUNT);
 	int i = 0;
 	for (; i < MAXTASKSCOUNT; i ++) {
 		tasks_name[i] = NULL;

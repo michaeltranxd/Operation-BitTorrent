@@ -12,7 +12,7 @@ static char *DELIM = ":";
 char **tasks_name;
 int *tasks_count;
 pthread_mutex_t task_lock;
-pthread_cond_t task_conds[MAXTASKSCOUNT];
+pthread_cond_t *task_conds;
 pthread_cond_t add_task_cond;
 // these mutex objects should be shared between client thread and server thread somehow.
 // Maybe declare them in the main function and pass them into client & server as parameter?
