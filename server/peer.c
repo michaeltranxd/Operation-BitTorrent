@@ -108,9 +108,15 @@ int main(int argc, char** argv){
 	args->argc = argc;
 	args->argv = argv;
 
-	pthread_mutex_init(&task_lock, NULL);
-	pthread_cond_init(&add_task_cond, NULL);
-	pthread_cond_init(&test_cond, NULL);
+	if (pthread_mutex_init(&task_lock, NULL) != 0) {
+		perror("Failed mutex_init() for task_lock");
+	}
+	if (pthread_cond_init(&add_task_cond, NULL) != 0) {
+		perror("Failed cond_init() for add_task_cond");
+	}
+
+	if (pthread_cond_init(&test_cond, NULL) != 0)
+		perror("Failed cond_init() for test_cond");
 	tasks_name = malloc(sizeof(char *) * MAXTASKSCOUNT);
 	tasks_count = malloc(sizeof(int) * MAXTASKSCOUNT);
 	
@@ -119,7 +125,8 @@ int main(int argc, char** argv){
 	for (; i < MAXTASKSCOUNT; i ++) {
 		tasks_name[i] = NULL;
 		tasks_count[i] = 0;
-		pthread_cond_init(&task_conds[i], NULL);
+		if (pthread_cond_init(&task_conds[i], NULL) != 0)
+			perror("Failed cond_init() for task_cond[]");
 		printf("tasks_name[%d] is %s\n", i, tasks_name[i]);
 	}
 	struct ifaddrs *addrs, *tmp;
@@ -130,8 +137,6 @@ int main(int argc, char** argv){
 
 	getifaddrs(&addrs);
 	tmp = addrs;
-	pthread_cond_init(&add_task_cond, NULL);
-
 	while (tmp) 
 	{
 		if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET)
