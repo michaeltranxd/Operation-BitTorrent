@@ -582,12 +582,16 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			}
 			printf("Finished sendPacket() to all available peers\n");
 			print_tasks_info();
+			printf("Start mutex_lock(), peers_itr is %d\n", peers_itr);
 			pthread_mutex_lock(&task_lock);
 			// all ASK_DL packets have been sent, now wait for server to wake me up
 			// condition wait on the corresponding condition variable
+			printf("Entered mutex_lock()\n");
 			while (tasks_count[tasks_itr] > 0)
 				pthread_cond_wait(&task_conds[tasks_itr], &task_lock);
+			printf("Finished cond_wait()\n");
 			pthread_mutex_unlock(&task_lock);
+			printf("Finished mutex_unlock()\n");
 
 			// now combine the files and resent ASK_DL for missing segments.
 			// combine_file() will malloc an int* that records the indexs of the missing segments
