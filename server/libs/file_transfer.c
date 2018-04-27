@@ -148,6 +148,7 @@ size_t send_file(char* filename, int sockfd, size_t index, size_t filesize){
 
 
 size_t recv_file(char* base_filename, int sockfd, size_t index, size_t filesize) {
+	printf("Start recv_file() for filename %s\n", base_filename);
 	int fd;
 	FILE *fp;
 
@@ -169,6 +170,7 @@ size_t recv_file(char* base_filename, int sockfd, size_t index, size_t filesize)
 		exit(-1);
 	}
 	free(filename);
+	printf("Finished open() the file %s\n", filename);
 
 	char buff[MAXDATASIZE];
 	memset(buff, '\0', MAXDATASIZE);

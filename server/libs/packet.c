@@ -576,6 +576,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 				peers_itr ++;
 			}
+			printf("Finished sendPacket() to all available peers\n");
 			pthread_mutex_lock(&task_lock);
 			// all ASK_DL packets have been sent, now wait for server to wake me up
 			// condition wait on the corresponding condition variable
@@ -589,9 +590,12 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			// if no segment is missing it will return NULL
 			int *missing_segments = combine_file(filename, segment_count);
 
+			printf("Finished combine_file() for the first time\n");
+
 			// iterate through missing_segments to get the index of missing segments
 			// then ask the corresponding peers again for the same segments
 			while (missing_segments != NULL) {
+				printf("missing_segments not NULL, do resend now\n");
 				int miss_itr = 1;
 				int miss_count = missing_segments[0];
 
@@ -630,7 +634,9 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				pthread_mutex_unlock(&task_lock);
 
 				free(missing_segments);
+				printf("Start combine_file() for missing segments\n");
 				missing_segments = combine_file(filename, segment_count);
+				printf("Finish combine_file() for missing segments\n");
 			
 			}
 			pthread_mutex_lock(&task_lock);
