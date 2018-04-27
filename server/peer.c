@@ -159,6 +159,11 @@ int main(int argc, char** argv){
 	pthread_join(client_thread, NULL);
 
 	free(args);
+	pthread_mutex_destroy(&task_lock);
+	pthread_cond_destroy(&add_task_cond);
+	for (i = 0; i < MAXTASKSCOUNT; i ++) {
+		pthread_cond_destroy(&task_conds[i]);
+	}
 
 	return 0;
 }

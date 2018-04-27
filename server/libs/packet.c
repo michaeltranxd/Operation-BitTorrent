@@ -586,7 +586,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			pthread_mutex_lock(&task_lock);
 			// all ASK_DL packets have been sent, now wait for server to wake me up
 			// condition wait on the corresponding condition variable
-			printf("Entered mutex_lock()\n");
+			printf("Entered mutex_lock(), tasks_count[%d] is %d\n", tasks_itr, tasks_count[tasks_itr]);
 			while (tasks_count[tasks_itr] > 0)
 				pthread_cond_wait(&task_conds[tasks_itr], &task_lock);
 			printf("Finished cond_wait()\n");
