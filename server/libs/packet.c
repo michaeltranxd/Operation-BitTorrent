@@ -570,11 +570,13 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 						perror("Failed sendPacket()\n");
 					} 
 				}
+
+				printf("Finished sendPacket() to the %dth peer\n", peers_itr);
 				if (close(peer_fd) == -1) {
 					perror("Failed close()");
 				}
 
-				printf("Finished sendPacket() to the %dth peer\n", peers_itr);
+				printf("Finished close() the socket related to the %dth peer\n", peers_itr);
 
 				peers_itr ++;
 			}
