@@ -574,6 +574,8 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 					perror("Failed close()");
 				}
 
+				printf("Finished sendPacket() to the %dth peer\n", peers_itr);
+
 				peers_itr ++;
 			}
 			printf("Finished sendPacket() to all available peers\n");
