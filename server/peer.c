@@ -151,6 +151,13 @@ int main(int argc, char** argv){
 	}
 
 	freeifaddrs(addrs);
+//	printf("Test cond_wait() on test_cond at the end of peer.c\n");
+//	pthread_mutex_lock(&task_lock);
+//	printf("Finished mutex_lock()\n");
+//	pthread_cond_wait(&test_cond, &task_lock);
+//	printf("Finished cond_wait()\n");
+//	pthread_mutex_unlock(&task_lock);
+//	printf("Finished mutex_unlock()\n");
 
 
 
@@ -167,13 +174,6 @@ int main(int argc, char** argv){
 	pthread_join(client_thread, NULL);
 
 	free(args);
-	printf("Test cond_wait() on test_cond at the end of peer.c\n");
-	pthread_mutex_lock(&task_lock);
-	printf("Finished mutex_lock()\n");
-	pthread_cond_wait(&test_cond, &task_lock);
-	printf("Finished cond_wait()\n");
-	pthread_mutex_unlock(&task_lock);
-	printf("Finished mutex_unlock()\n");
 	pthread_mutex_destroy(&task_lock);
 	pthread_cond_destroy(&add_task_cond);
 	for (i = 0; i < MAXTASKSCOUNT; i ++) {

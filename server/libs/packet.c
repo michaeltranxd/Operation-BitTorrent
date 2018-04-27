@@ -423,6 +423,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 	char *buf_copy = strdup(buf);
 	char *orig = buf_copy; 				// part of cleanup
+	printf("before decoding, buf_copy is %s\n", buf_copy);
 	strtok(buf_copy, DELIM); 			// now buf_copy is the data
 
 	//declaration of statements
@@ -583,6 +584,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			}
 			printf("Finished sendPacket() to all available peers\n");
 			print_tasks_info();
+			sleep(5);
 			printf("Start mutex_lock(), peers_itr is %d\n", peers_itr);
 			pthread_mutex_lock(&task_lock);
 			// all ASK_DL packets have been sent, now wait for server to wake me up
@@ -790,13 +792,16 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			break;
 
 		case START_SD:
+			printf("Start START_SD handle\n");
 			filename = strtok(NULL, DELIM);
+			printf("(START_SD) filename received is %s\n", filename);
 			filesize_string = strtok(NULL, DELIM);
 			if (sscanf(filesize_string, "%zu", &filesize) == EOF) {
 				perror("Failed sscanf()");
 //				free(args);
 				return NULL;
 			} 
+			printf("(START_SD) filesize received is %s, filesize is %zu\n", filesize_string, filesize);
 
 			index_string = strtok(NULL, DELIM);
 			if (sscanf(index_string, "%d", &index) == EOF) {
@@ -804,6 +809,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 //				free(args);
 				return NULL;
 			} 
+			printf("(START_SD) index_string received is %s, index is %d\n", index_string, index);
 
 			printf("(received START_SD) Start recv_file()\n");
 			if (recv_file(filename, dl_sockfd, index, filesize) != filesize) {
