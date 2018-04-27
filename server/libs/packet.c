@@ -592,6 +592,8 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			// combine_file() will malloc an int* that records the indexs of the missing segments
 			// the last element in this int* is set to 0
 			// if no segment is missing it will return NULL
+
+			printf("Finished waiting for tasks_count[%d], now start combine_file() for file %s\n", tasks_itr, filename);
 			int *missing_segments = combine_file(filename, segment_count);
 
 			printf("Finished combine_file() for the first time\n");
