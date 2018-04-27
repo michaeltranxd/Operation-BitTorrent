@@ -37,6 +37,7 @@ extern pthread_cond_t *task_conds;
 extern pthread_cond_t add_task_cond;
 extern char **tasks_name;
 extern int *tasks_count;
+extern pthread_cond_t test_cond;
 
 typedef struct list{
 	char *ip;

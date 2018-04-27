@@ -14,6 +14,7 @@ int *tasks_count;
 pthread_mutex_t task_lock;
 pthread_cond_t *task_conds;
 pthread_cond_t add_task_cond;
+pthread_cond_t test_cond;
 // these mutex objects should be shared between client thread and server thread somehow.
 // Maybe declare them in the main function and pass them into client & server as parameter?
 
@@ -588,7 +589,8 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			// condition wait on the corresponding condition variable
 			printf("Entered mutex_lock(), tasks_count[%d] is %d\n", tasks_itr, tasks_count[tasks_itr]);
 			while (tasks_count[tasks_itr] > 0)
-				pthread_cond_wait(&task_conds[tasks_itr], &task_lock);
+				//pthread_cond_wait(&task_conds[tasks_itr], &task_lock);
+				pthread_cond_wait(&test_cond, &task_lock);
 			printf("Finished cond_wait()\n");
 			pthread_mutex_unlock(&task_lock);
 			printf("Finished mutex_unlock()\n");
@@ -641,7 +643,8 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				pthread_mutex_lock(&task_lock);
 				printf("Entered mutex_lock()\n");
 				while (tasks_count[tasks_itr] > 0) {
-					pthread_cond_wait(&task_conds[peers_itr], &task_lock);
+					//pthread_cond_wait(&task_conds[peers_itr], &task_lock);
+					pthread_cond_wait(&test_cond, &task_lock);
 				}
 				printf("Finished cond_wait()\n");
 				pthread_mutex_unlock(&task_lock);
@@ -819,7 +822,8 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			tasks_count[tasks_itr] --;
 			if (tasks_count[tasks_itr] == 0) {
 				printf("(received START_SD) tasks_count[%d] reaches 0, now wake up client thread\n", tasks_itr);
-				pthread_cond_broadcast(&task_conds[tasks_itr]);
+				//pthread_cond_broadcast(&task_conds[tasks_itr]);
+				pthread_cond_broadcast(&test_cond);
 			}
 			pthread_mutex_unlock(&task_lock);
 
