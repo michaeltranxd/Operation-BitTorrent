@@ -108,15 +108,15 @@ int main(int argc, char** argv){
 	args->argc = argc;
 	args->argv = argv;
 
-	task_lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-	add_task_cond = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+	pthread_mutex_init(&task_lock, NULL);
+	pthread_cond_init(&add_task_cond, NULL);
 	tasks_name = malloc(sizeof(char *) * MAXTASKSCOUNT);
 	tasks_count = malloc(sizeof(int) * MAXTASKSCOUNT);
 	int i = 0;
 	for (; i < MAXTASKSCOUNT; i ++) {
 		tasks_name[i] = NULL;
 		tasks_count[i] = 0;
-		task_conds[i] = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+		pthread_cond_init(&task_conds[i], NULL);
 		printf("tasks_name[%d] is %s\n", i, tasks_name[i]);
 	}
 	struct ifaddrs *addrs, *tmp;
@@ -127,6 +127,7 @@ int main(int argc, char** argv){
 
 	getifaddrs(&addrs);
 	tmp = addrs;
+	pthread_cond_init(&add_task_cond, NULL);
 
 	while (tmp) 
 	{
