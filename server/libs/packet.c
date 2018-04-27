@@ -397,7 +397,7 @@ static int find_task(char *filename) {
 	return -1;
 }
 
-static int add_task(char *filename){
+static int add_task(char *filename, size_t segment_count){
 	int itr = 0;
 	printf("(add_task) filename is %s\n", filename);
 	while (itr < MAXTASKSCOUNT) {
@@ -405,6 +405,7 @@ static int add_task(char *filename){
 		if (tasks_name[itr] == NULL) {
 			//tasks_name[itr] = strndup(filename, strlen(filename));
 			tasks_name[itr] = filename;
+			tasks_count[itr] = segment_count;
 			printf("return itr %d %s\n", itr, tasks_name[itr]);
 			return itr;
 		}
@@ -450,28 +451,25 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			ip = req_ip; 	// ip
 			port = strtok(NULL, DELIM);	// port
 
-			printf("Starting newConnection() to ip:%s port:%s\n", ip, port);
+			printf("(received ASK_REQ) Start newConnection() to ip:%s port:%s\n", ip, port);
 
 			head = newConnection(head, ip, port);
 
-			printf("PRINTING LIST!\n");
+			printf("(received ASK_REQ) PRINTING LIST!\n");
 			list* curr = head;
 			while(curr != NULL){
 				printf("%s\n", curr->ip);
 				printf("%s\n", curr->port);
 				curr = curr->next;
 			}
-			printf("PRINTING LIST!\n");
 
-			//printf("making packet\n");
-			// making RESP_REQ
 			makePacket(buf, filename, ip, port, 0, 0, RESP_REQ);
 
-			printf("Starting connectAll() \n");
+			printf("(received ASK_REQ) Start connectAll() \n");
 			head = connectAll(head, filename, &numUsers, buf, ip);
 
 			if (numUsers != 0) {
-				printf("connecting back to requester!\n");
+				printf("(received ASK_REQ) connecting back to requester!\n");
 				if ((sockfd = getConnection(ip, port)) == -1){ // failed
 					break;
 				}
@@ -480,12 +478,12 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 				printf("%s\n", buf);
 
-				printf("sent packet to requester RESP_REQ\n");
+				printf("(received ASK_REQ) sent packet to requester RESP_REQ\n");
 
 				close(sockfd);
 			}
 			else { // no one has file
-				printf("no one has file haha\n");
+				printf("(received ASK_REQ) no one has file haha\n");
 				// send error messgae back to requester
 
 			}
@@ -510,47 +508,51 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 //				free(args);
 				return NULL;
 			} 
-
-			printf("(received RESP_REQ) filename:%s, ip:%s, port:%s\n", filename, ip, port);
-			pthread_mutex_lock(&task_lock);
-			printf("start find_task()\n");
-			print_tasks_name();
-			tasks_itr = find_task(filename);
-			printf("finished find_task() for filename:%s\n", filename);
-			if (tasks_itr == -1)
-				tasks_itr = add_task(filename);
-			if (tasks_itr == -1) 
-				// we reach MAXTASKSCOUNT, wait till there's a spot in tasks_name so i can add task
-				pthread_cond_wait(&add_task_cond, &task_lock);
-			printf("CONDWAIT\n");
-			pthread_mutex_unlock(&task_lock);
-
+			printf("(received RESP_REQ) filename:%s, my ip:%s, my port:%s\n", filename, ip, port);
 			
+
+			// parse the rest of the RESP_REQ packet to get ip, port of peers, and segment_count.
 			char **peers_ip = (char **)malloc(MAXPEERSCOUNT * sizeof(char *));
 			char **peers_port = (char **) malloc(MAXPEERSCOUNT * sizeof(char *));
-
 			printf("finished malloc peers_ip and peers_port\n");
 			char *token;
 			int peers_itr = 0;
 			while ((token = strtok(NULL, DELIM)) != NULL) {
-				printf("token is parsed\n");
+				printf("now initialize peers_ip[%d] with %s\n", peers_itr, token);
 				peers_ip[peers_itr] = token;
 				token = strtok(NULL, DELIM);
+				printf("now initialize peers_port[%d] with %s\n", peers_itr, token);
 				peers_port[peers_itr] = token;
 				peers_itr ++;
-				printf("peers_ip[%d] is %s, peers_port[%d] is %s\n", peers_itr, peers_ip[peers_itr], peers_itr, peers_port[peers_itr]);
 			}
 			int segment_count = peers_itr;
 			size_t *segments = (size_t *)malloc(segment_count * sizeof(size_t)); // records size of each segment
 			schedule_segment_size(segments, filesize, segment_count);
-		
-			printf("Segment size after %zd\n", segments[0]);	
+			if (segments[0] == filesize) // if the filesize is less than two pages, schedule_segment_size() will initialize segments[0] with filesize, and the requester should only ask one node about the file.
+				segment_count = 1;
+
+			// initialize corresponding tasks_name[] and tasks_count[]
+			pthread_mutex_lock(&task_lock);
+			printf("(received RESP_REQ) Start print_tasks_name() and find_task()\n");
+			print_tasks_name();
+			tasks_itr = find_task(filename);
+			if (tasks_itr == -1)
+				printf("(received RESP_REQ) find_task() returns -1, try add_task()");
+				
+			while ((tasks_itr = add_task(filename, segment_count)) == -1) {
+				printf("(received RESP_REQ) add_task() returns -1, wait till theres a spot in tasks_name and add_task() again\n");
+				pthread_cond_wait(&add_task_cond, &task_lock);
+			}
+			printf("(received RESP_REQ) either find_task(%s) succeed or add_task(%s) succeed, now proceed\n", filename, filename);
+			pthread_mutex_unlock(&task_lock);
+
+
 			peers_itr = 0;
-			sockfd = 0;
+			int peer_fd = 0;
 			while (peers_itr < segment_count) {
 				char buf[MAXBUFSIZE];
-				sockfd = getConnection(peers_ip[peers_itr], peers_port[peers_itr]);
-				if (sockfd == -1) {
+				peer_fd = getConnection(peers_ip[peers_itr], peers_port[peers_itr]);
+				if (peer_fd == -1) {
 					perror("Failed getConnection()");
 					peers_itr ++;
 					continue; // try to connect to next peer
@@ -558,14 +560,17 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 				// we need our own ip/port
 				// send directly instead of asking p_client
-				sendPacket(sockfd, buf, filename, ip, port, segments[peers_itr], peers_itr, ASK_DL);
-
-//				if (p_client(sockfd, peers_ip[peers_itr], peers_port[peers_itr], filename, buf, segments[peers_itr], peers_itr, ASK_DL) != 0) {
-					// p_client send ASK_DL to the target peer given sockfd
-//					printf("Failed t_client() on ip %s, port %s\n", peers_ip[peers_itr], peers_port[peers_itr]);
-//				}
-
-				if (close(sockfd) == -1) {
+				if (segment_count == 1) {
+					if (sendPacket(peer_fd, buf, filename, ip, port, segments[peers_itr], 0, ASK_DL) == -1) {
+						perror("Failed sendPacket()\n");
+					} 
+				}
+				else {
+					if (sendPacket(peer_fd, buf, filename, ip, port, segments[peers_itr], peers_itr + 1, ASK_DL) == -1) {
+						perror("Failed sendPacket()\n");
+					} 
+				}
+				if (close(peer_fd) == -1) {
 					perror("Failed close()");
 				}
 
@@ -574,7 +579,8 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			pthread_mutex_lock(&task_lock);
 			// all ASK_DL packets have been sent, now wait for server to wake me up
 			// condition wait on the corresponding condition variable
-			pthread_cond_wait(&task_conds[tasks_itr], &task_lock);
+			while (tasks_count[tasks_itr] > 0)
+				pthread_cond_wait(&task_conds[tasks_itr], &task_lock);
 			pthread_mutex_unlock(&task_lock);
 
 			// now combine the files and resent ASK_DL for missing segments.
@@ -586,7 +592,13 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			// iterate through missing_segments to get the index of missing segments
 			// then ask the corresponding peers again for the same segments
 			while (missing_segments != NULL) {
-				int miss_itr = 0;
+				int miss_itr = 1;
+				int miss_count = missing_segments[0];
+
+				pthread_mutex_lock(&task_lock);
+				tasks_count[tasks_itr] = miss_count;
+				pthread_mutex_unlock(&task_lock);
+
 				// the last element is set to 0 in combine_file()
 				while (missing_segments[miss_itr] != 0) {
 
@@ -594,13 +606,17 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 //					char buf[MAXBUFSIZE];
 
-					sockfd = getConnection(peers_ip[miss_index], peers_port[miss_index]);
-					if (sockfd == -1) {
+					peer_fd = getConnection(peers_ip[miss_index], peers_port[miss_index]);
+					if (peer_fd == -1) {
 						printf("Failed getConnection()\n");
 						continue;
 					}
-						printf("Failed t_client() on ip %s, port %s\n", peers_ip[miss_index], peers_port[miss_index]);
-					if (close(sockfd) == -1) {
+
+					if (sendPacket(peer_fd, buf, filename, ip, port, segments[peers_itr], missing_segments[miss_itr], ASK_DL) == -1) {
+						printf("Failed sendPacket()\n");
+					}
+
+					if (close(peer_fd) == -1) {
 						perror("Failed close()");
 					}
 
@@ -620,7 +636,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			pthread_mutex_lock(&task_lock);
 			tasks_name[tasks_itr] = NULL;
 			// tasks_count[tasks_itr] is already 0
-			pthread_cond_signal(&add_task_cond);
+			pthread_cond_signal(&add_task_cond); // wake up one thread
 			pthread_mutex_unlock(&task_lock);
 
 
@@ -730,15 +746,11 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 //			whenever you are using get connection, just use send packet
 //
 
-			sendPacket(sockfd, buf, filename, ip, port, filesize, index, START_SD);
+			if (sendPacket(sockfd, buf, filename, ip, port, filesize, index, START_SD) == -1){
+				printf("(received ASK_DL) Failed sendPacket() for file named %s, index %d\n", filename, index);
+				return NULL;
+			}
 			
-//			if (p_client(sockfd, ip, port, filename, buf, filesize, index, START_SD) == -1) {
-//				printf("Failed p_client() for file named %s, index %d\n", filename, index);
-//				free(args);
-//				return NULL;
-//			}
-
-
 			send_file(filename, sockfd, index, filesize);
 //			if (send_file(filename, sockfd, index, filesize) != filesize) {
 //				printf("Failed send_file() for file named %s, index %d\n", filename, index);
@@ -770,23 +782,23 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				return NULL;
 			} 
 
-			printf("About to receive\n");
+			printf("(received START_SD) Start recv_file()\n");
 			if (recv_file(filename, dl_sockfd, index, filesize) != filesize) {
 				printf("Failed recv_file()\n");
 //				free(args);
 				return NULL;
 			}
-			printf("BEFORE MUTEX\n");
+			printf("(received START_SD) Start mutex_lock() and find_task()\n");
 			pthread_mutex_lock(&task_lock);
-			printf("AFTER MUTEX\n");
 			tasks_itr = find_task(filename);
 			if (tasks_itr == -1) {
-				printf("Failed find_task(): task is not in the tasks array");
+				printf("(received START_SD) Failed find_task(): task is not in the tasks array");
 				pthread_mutex_unlock(&task_lock);
 				break;
 			}
 			tasks_count[tasks_itr] --;
 			if (tasks_count[tasks_itr] == 0) {
+				printf("(received START_SD) tasks_count[%d] reaches 0, now wake up client thread\n", tasks_itr);
 				pthread_cond_broadcast(&task_conds[tasks_itr]);
 			}
 			pthread_mutex_unlock(&task_lock);

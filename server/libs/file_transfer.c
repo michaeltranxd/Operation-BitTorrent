@@ -122,14 +122,6 @@ size_t send_file(char* filename, int sockfd, size_t index, size_t filesize){
 		size_t old_size = s.st_size; // original file size of fd
 		
 		size_t page_size = (size_t) sysconf(_SC_PAGESIZE);
-	//	size_t extra_size = 0;
-	//	if (old_size % page_size != 0) extra_size = page_size - (old_size % page_size);
-	//	size_t new_size = old_size + extra_size; // new file size of fd
-	//	assert((new_size % page_size) == 0); // make sure new_size is divisible by page_size
-	//	if (ftruncate(fd, new_size) == -1) { // this will append NULL bytes to the end of fd until its size becomes new_size
-	//		printf("Error ftruncate() file %s to new_size %zu\n", filename, new_size);
-	//		exit(-1);
-	//	}
 
 		size_t offset = (index - 1) * page_size;
 		void *addr0 = mmap(NULL, old_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -223,8 +215,8 @@ size_t recv_file(char* base_filename, int sockfd, size_t index, size_t filesize)
 int* combine_file(char *base_filename, int segment_count) {
 	if (segment_count < 2) return NULL; // there should be at least 2 segments
 
-	int *ret = (int *) malloc((segment_count + 1) * sizeof(int)); // last element will be 0, for end array detection
-	int ret_itr = 0;
+	int *ret = (int *) malloc((segment_count + 2) * sizeof(int)); // last element will be 0, for end array detection; first element is the number of missing segments.
+	int ret_itr = 1;
 
 	void **addr = (void **) malloc((segment_count + 1) * sizeof(void *)); // record the addr each segment is mapped to
 	size_t segment[segment_count + 1]; // records the size of each segment
@@ -275,8 +267,9 @@ int* combine_file(char *base_filename, int segment_count) {
 		index ++;
 	}
 
-	if (ret_itr != 0) {
+	if (ret_itr > 1) { // ret_itr starts from 1
 		ret[ret_itr] = 0; // if ret is not empty, set last element to 0 and return ret.
+		ret[0] = ret_itr; // the number of missing segments
 		printf("At least one segment is missing, since ret is non-empty\n");
 		index = 1;
 		while (index < (segment_count + 1)) {
@@ -334,6 +327,12 @@ int* combine_file(char *base_filename, int segment_count) {
 void schedule_segment_size (size_t *segments, size_t filesize, int segment_count) {
 	size_t old_size = filesize;
 	size_t page_size = (size_t) sysconf(_SC_PAGESIZE);
+
+	if (old_size < page_size * 2) { // if the target file is less than 2 pages large, just send the entire file
+		segments[0] = filesize;
+		return;
+	}
+	
 	size_t extra_size = 0;
 	if (old_size % page_size != 0) {
 		extra_size = page_size - (old_size % page_size);
@@ -341,16 +340,17 @@ void schedule_segment_size (size_t *segments, size_t filesize, int segment_count
 	size_t new_size = old_size + extra_size;
 	assert((new_size % page_size) == 0);
 
-	int page_count = new_size / page_size;
-	size_t regular_segment_size = (page_count / segment_count) * page_size; // 5 / 3 = 1
-	size_t last_segment_size = (page_count % segment_count) * page_size;
+	int page_count = new_size / page_size; // say, 5 pages, 2 segments
+	size_t regular_segment_size = (page_count / segment_count) * page_size; // 5 / 2 = 2; 5 % 2 = 1
+	size_t last_segment_size = (page_count % segment_count) * page_size + regular_segment_size;
 
 	int itr = 0;
-	while (itr < segment_count) {
+	while (itr < segment_count - 1) {
 		segments[itr] = regular_segment_size;
-		printf("segment size %zd\n", segments[itr]);
+		printf("regular segment size %zd\n", segments[itr]);
 		itr ++;
 	}
 	segments[itr] = last_segment_size;
+	printf("last segment size is %zd\n", segments[itr]);
 }
 
