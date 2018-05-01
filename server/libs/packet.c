@@ -540,7 +540,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			if (tasks_itr == -1)
 				tasks_itr = add_task(filename);
 			if (tasks_itr == -1) 
-				// we reach MAXTASKSCOUNT, wait till there's a spot in tasks_name so i can add task
+				// we reach MAXTASKSCOUNT, wait till there's a spot in tasks_name so i can add task // TODO NEXT
 				pthread_cond_wait(&add_task_cond, &task_lock);
 			printf("CONDWAIT\n");
 			pthread_mutex_unlock(&task_lock);
@@ -568,15 +568,15 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 		
 			printf("Segment size after %zd\n", segments[0]);	
 			peers_itr = 0;
-			sockfd = 0;
+			int peer_fd = 0;
 
 			if (segments[0] == filesize) {
 				segment_count = 1;
 			}
 			while (peers_itr < segment_count) {
 				char buf[MAXBUFSIZE];
-				sockfd = getConnection(peers_ip[peers_itr], peers_port[peers_itr]);
-				if (sockfd == -1) {
+				peer_fd = getConnection(peers_ip[peers_itr], peers_port[peers_itr]);
+				if (peer_fd == -1) {
 					perror("Failed getConnection()");
 					peers_itr ++;
 					continue; // try to connect to next peer
@@ -584,14 +584,25 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 				// we need our own ip/port
 				// send directly instead of asking p_client
-				sendPacket(sockfd, buf, filename, ip, port, segments[peers_itr], peers_itr, ASK_DL);
+				if (segment_count == 1) {
+					if (sendPacket(peer_fd, buf, filename, ip, port, segments[peers_itr], 0, ASK_DL) == -1) {
+						perror("Failed sendPacket()\n");
+					} 
+				}
+				else {
+					if (sendPacket(peer_fd, buf, filename, ip, port, segments[peers_itr], peers_itr + 1, ASK_DL) == -1) {
+						perror("Failed sendPacket()\n");
+					} 
+				}
+
+				printf("Finished sendPacket() to the %dth peer\n", peers_itr);
 
 //				if (p_client(sockfd, peers_ip[peers_itr], peers_port[peers_itr], filename, buf, segments[peers_itr], peers_itr, ASK_DL) != 0) {
 					// p_client send ASK_DL to the target peer given sockfd
 //					printf("Failed t_client() on ip %s, port %s\n", peers_ip[peers_itr], peers_port[peers_itr]);
 //				}
 
-				if (close(sockfd) == -1) {
+				if (close(peer_fd) == -1) {
 					perror("Failed close()");
 				}
 
@@ -602,7 +613,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			// all ASK_DL packets have been sent, now wait for server to wake me up
 			// condition wait on the corresponding condition variable
 			printf("tasks_count %p\n", tasks_count);
-			//while (tasks_count[tasks_itr] > 0) {
+			while (tasks_count[tasks_itr] > 0) {
 				pthread_cond_wait(&tasks_cond[tasks_itr], &task_lock);
 			//}
 			pthread_mutex_unlock(&task_lock);
