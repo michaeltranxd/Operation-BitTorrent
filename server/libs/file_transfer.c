@@ -329,7 +329,7 @@ void schedule_segment_size (size_t *segments, size_t filesize, int segment_count
 	size_t page_size = (size_t) sysconf(_SC_PAGESIZE);
 	
 	
-	if (old_size < page_size * 2) { // if the target file is less than 2 pages large, just send the entire file
+	if ((old_size < page_size * 2) || (segment_count == 1)) { // if the target file is less than 2 pages large, just send the entire file
 		segments[0] = filesize;
 		return;
 	}
