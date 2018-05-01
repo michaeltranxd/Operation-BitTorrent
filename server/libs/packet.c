@@ -673,6 +673,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			free(peers_ip);
 			free(peers_port);
 			free(segments);
+			printf("All done! Finished combining file %s\n", filename);
 			break;
 
 			// work on this function ASK_AVAIL:FILENAME:FILESIZE
