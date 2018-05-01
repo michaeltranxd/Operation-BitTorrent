@@ -122,19 +122,12 @@ size_t send_file(char* filename, int sockfd, size_t index, size_t filesize){
 		size_t old_size = s.st_size; // original file size of fd
 		
 		size_t page_size = (size_t) sysconf(_SC_PAGESIZE);
-	//	size_t extra_size = 0;
-	//	if (old_size % page_size != 0) extra_size = page_size - (old_size % page_size);
-	//	size_t new_size = old_size + extra_size; // new file size of fd
-	//	assert((new_size % page_size) == 0); // make sure new_size is divisible by page_size
-	//	if (ftruncate(fd, new_size) == -1) { // this will append NULL bytes to the end of fd until its size becomes new_size
-	//		printf("Error ftruncate() file %s to new_size %zu\n", filename, new_size);
-	//		exit(-1);
-	//	}
 
 		size_t offset = (index - 1) * page_size;
 		void *addr0 = mmap(NULL, old_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 		if (addr0 == MAP_FAILED) {
-			printf("Error mmap() file %s\n", filename);
+			perror("Error mmap()");
+			printf("Filename: %s\n", filename);
 			exit(-1);
 		}
 		void *addr_at_index = (void *)((char *)addr0 + offset);
@@ -145,7 +138,7 @@ size_t send_file(char* filename, int sockfd, size_t index, size_t filesize){
 			// exit(-1);
 		}
 		if (munmap(addr0, old_size) == -1) {
-			printf("Error unmapping\n");
+			perror("Error munmap()");
 		}
 
 		close(fd);
