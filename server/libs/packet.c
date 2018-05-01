@@ -10,7 +10,7 @@ static char *DELIM = ":";
 
 
 char **tasks_name;
-size_t *tasks_count;
+int *tasks_count;
 pthread_mutex_t task_lock;
 pthread_cond_t tasks_cond[MAXTASKSCOUNT];
 pthread_cond_t add_task_cond;
@@ -181,7 +181,7 @@ void print_tasks_info() {
 	printf("addr of tasks_name: %p; tasks_count: %p; task_lock: %p\n", &(tasks_name[0]), &(tasks_count[0]), &task_lock);
 	int i = 0;
 	for (; i < MAXTASKSCOUNT; i ++) {
-		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %zu\n", i, tasks_name[i], i, tasks_count[i]);
+		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", i, tasks_name[i], i, tasks_count[i]);
 	}
 }
 
@@ -263,7 +263,7 @@ list* readPacket(int sockfd, list* head, char *req_ip){
 	//printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", 1, tasks_name[1], 1, tasks_count[0]);
 	int test_itr = 0;
 	for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
-		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %zu\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
 	}
 	
 
@@ -417,7 +417,7 @@ static int find_task(char *filename) {
 	return -1;
 }
 
-static int add_task(char *filename, size_t file_size){
+static int add_task(char *filename, int segment_count){
 	int itr = 0;
 	printf("(add_task) filename is %s\n", filename);
 	while (itr < MAXTASKSCOUNT) {
@@ -425,8 +425,8 @@ static int add_task(char *filename, size_t file_size){
 		if (tasks_name[itr] == NULL) {
 			//tasks_name[itr] = strndup(filename, strlen(filename));
 			tasks_name[itr] = filename;
-			tasks_count[itr] = file_size;
-			printf("return itr %d, tasks_name %s, tasks_count %zu\n", itr, tasks_name[itr], tasks_count[itr]);
+			tasks_count[itr] = segment_count;
+			printf("return itr %d, tasks_name %s, tasks_count %d\n", itr, tasks_name[itr], tasks_count[itr]);
 			return itr;
 		}
 		itr ++;
@@ -533,19 +533,6 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			} 
 
 			printf("(received RESP_REQ) filename:%s, ip:%s, port:%s\n", filename, ip, port);
-			pthread_mutex_lock(&task_lock);
-			printf("start find_task()\n");
-			print_tasks_name();
-			tasks_itr = find_task(filename);
-			printf("finished find_task() for filename:%s\n", filename);
-			if (tasks_itr == -1)
-				tasks_itr = add_task(filename, filesize);
-			if (tasks_itr == -1) 
-				// we reach MAXTASKSCOUNT, wait till there's a spot in tasks_name so i can add task // TODO NEXT
-				pthread_cond_wait(&add_task_cond, &task_lock);
-			print_tasks_info();
-			printf("CONDWAIT\n");
-			pthread_mutex_unlock(&task_lock);
 
 			fprintf(stderr, "MUTEX UNLOCK SUCCESS\n");
 			char **peers_ip = malloc(MAXPEERSCOUNT * sizeof(char *));
@@ -569,6 +556,21 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			schedule_segment_size(segments, filesize, segment_count);
 		
 			printf("Segment size after %zd\n", segments[0]);	
+
+			pthread_mutex_lock(&task_lock);
+			printf("start find_task()\n");
+			print_tasks_name();
+			tasks_itr = find_task(filename);
+			printf("finished find_task() for filename:%s\n", filename);
+			if (tasks_itr == -1)
+				tasks_itr = add_task(filename, segment_count);
+			if (tasks_itr == -1) 
+				// we reach MAXTASKSCOUNT, wait till there's a spot in tasks_name so i can add task // TODO NEXT
+				pthread_cond_wait(&add_task_cond, &task_lock);
+			print_tasks_info();
+			printf("CONDWAIT\n");
+			pthread_mutex_unlock(&task_lock);
+
 			peers_itr = 0;
 			int peer_fd = 0;
 
