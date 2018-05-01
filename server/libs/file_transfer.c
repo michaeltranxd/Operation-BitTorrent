@@ -107,7 +107,7 @@ size_t send_file(char* filename, int sockfd, size_t index, size_t filesize){
 	}
 
 	else {
-		int fd = open(filename, O_RDONLY, 0666);
+		int fd = open(filename, O_RDWR, 0666);
 		if (fd == -1) {
 			printf("Error open() file %s\n", filename);
 			exit(-1);
