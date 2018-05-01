@@ -459,6 +459,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 	int tasks_itr;
 	char *filesize_string;
 	size_t reg_segment_size;
+	char *reg_segment_size_string;
 
 	switch(packet_num){
 		case ASK_REQ: 
@@ -760,7 +761,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				return NULL;
 			} 
 
-			char *reg_segment_size_string = strtok(NULL, DELIM);
+			reg_segment_size_string = strtok(NULL, DELIM);
 			if (sscanf(reg_segment_size_string, "%zu", &reg_segment_size) == EOF) {
 				perror("Failed sscanf()");
 //				free(args);
@@ -817,6 +818,14 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 //				free(args);
 				return NULL;
 			} 
+
+			reg_segment_size_string = strtok(NULL, DELIM);
+			if (sscanf(reg_segment_size_string, "%zu", &reg_segment_size) == EOF) {
+				perror("Failed sscanf()");
+//				free(args);
+				return NULL;
+			} 
+
 
 			index_string = strtok(NULL, DELIM);
 			if (sscanf(index_string, "%d", &index) == EOF) {
