@@ -81,7 +81,7 @@ size_t send_file(char* filename, int sockfd, size_t index, size_t filesize){
 			int bytes_read = fread(buff, sizeof(char), MAXDATASIZE, fp);
 
 			if (bytes_read > 0) {
-				printf("Successfully read %d bytes, now send \n", bytes_read);
+				//printf("Successfully read %d bytes, now send \n", bytes_read);
 				if (write_to_socket(sockfd, buff, bytes_read) == (size_t)-1){
 					printf("Error writing to sockfd %d\n", sockfd);
 					exit(-1);
@@ -175,10 +175,10 @@ size_t recv_file(char* base_filename, int sockfd, size_t index, size_t filesize)
 	memset(buff, '\0', MAXDATASIZE);
 	size_t bytes_recv = 0;
 	size_t total_bytes_recv = 0;
+	printf("about to receive\n");
 	while (1) {
-		printf("about to receive\n");
 		bytes_recv = read_from_socket(sockfd, buff, MAXDATASIZE);
-		printf("RECEIVED %s\n", buff);
+		//printf("RECEIVED %s\n", buff);
 
 		if (bytes_recv == (size_t)-1) {
 			if (errno == EINTR) {}
@@ -202,7 +202,7 @@ size_t recv_file(char* base_filename, int sockfd, size_t index, size_t filesize)
 			if (total_bytes_recv == filesize) break;
 			//printf ("Reach of file, bytes_recv == 0\n");
 			else {
-				printf("Reading less data than supposed to, total_bytes_recv %zu, filesize %zu\n", total_bytes_recv, filesize);
+				printf("Reading data of different size than supposed to, total_bytes_recv %zu, filesize %zu\n", total_bytes_recv, filesize);
 				break;
 			}
 		}
