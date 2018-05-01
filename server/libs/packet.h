@@ -16,7 +16,7 @@
 #include <pthread.h>
 #include <fcntl.h>
 
-
+#include "var.h"
 #include "client.h"
 #include "file_transfer.h"
 
@@ -30,13 +30,6 @@
 #define START_SD		6
 
 
-#define MAXTASKSCOUNT 10
-
-extern pthread_mutex_t task_lock;
-extern pthread_cond_t tasks_cond[MAXTASKSCOUNT];
-extern pthread_cond_t add_task_cond;
-extern char **tasks_name;
-extern int *tasks_count;
 
 typedef struct list{
 	char *ip;
