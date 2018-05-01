@@ -525,19 +525,23 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			printf("CONDWAIT\n");
 			pthread_mutex_unlock(&task_lock);
 
-			
-			char **peers_ip = (char **)malloc(MAXPEERSCOUNT * sizeof(char *));
-			char **peers_port = (char **) malloc(MAXPEERSCOUNT * sizeof(char *));
-
+			fprintf(stderr, "MUTEX UNLOCK SUCCESS\n");
+			char **peers_ip = malloc(MAXPEERSCOUNT * sizeof(char *));
+			char **peers_port = malloc(MAXPEERSCOUNT * sizeof(char *));
+			fprintf(stderr, "%d %zd\n", MAXPEERSCOUNT, sizeof(peers_ip));
 			char *token;
 			int peers_itr = 0;
 			while ((token = strtok(NULL, DELIM)) != NULL) {
-				peers_ip[peers_itr] = token;
+				fprintf(stderr, "TOKEN %s\n", token);
+				peers_ip[peers_itr] = strdup(token);
+				fprintf(stderr, "accessed peer ip!\n");
 				token = strtok(NULL, DELIM);
-				peers_port[peers_itr] = token;
-				peers_itr ++;
+				fprintf(stderr, "Accessing port: %s\n", token);
+				peers_port[peers_itr] = strdup(token);
 				printf("peers_ip[%d] is %s, peers_port[%d] is %s\n", peers_itr, peers_ip[peers_itr], peers_itr, peers_port[peers_itr]);
+				peers_itr ++;
 			}
+			fprintf(stderr, "token parsing done\n");
 			int segment_count = peers_itr;
 			size_t *segments = (size_t *)malloc(segment_count * sizeof(size_t)); // records size of each segment
 			schedule_segment_size(segments, filesize, segment_count);
