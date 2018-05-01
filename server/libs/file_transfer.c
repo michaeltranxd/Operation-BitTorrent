@@ -344,7 +344,9 @@ void schedule_segment_size (size_t *segments, size_t filesize, int segment_count
 
 	int page_count = new_size / page_size;
 	size_t regular_segment_size = (page_count / segment_count) * page_size; // 5 / 3 = 1
-	size_t last_segment_size = (page_count % segment_count) * page_size + regular_segment_size;
+	size_t last_segment_size = extra_size + regular_segment_size;
+
+	printf("r_seg_size %zu, l_seg_size %zu, extra_size %zu, new_size %zu, old_size %zu\n", regular_segment_size, last_segment_size, extra_size, new_size, old_size);
 
 	int itr = 0;
 	while (itr < segment_count - 1) {
