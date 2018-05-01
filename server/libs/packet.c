@@ -820,13 +820,6 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				return NULL;
 			} 
 
-			reg_segment_size_string = strtok(NULL, DELIM);
-			if (sscanf(reg_segment_size_string, "%zu", &reg_segment_size) == EOF) {
-				perror("Failed sscanf()");
-//				free(args);
-				return NULL;
-			} 
-
 
 			index_string = strtok(NULL, DELIM);
 			if (sscanf(index_string, "%d", &index) == EOF) {
