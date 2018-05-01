@@ -32,6 +32,17 @@ int main(int argc, char** argv){
 		exit(1);
 	}
 
+	task_lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+	add_task_cond = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+	tasks_name = malloc(sizeof(char *) * MAXTASKSCOUNT);
+	tasks_count = malloc(sizeof(int) * MAXTASKSCOUNT);
+	int i = 0;
+	for (; i < MAXTASKSCOUNT; i ++) {
+		tasks_name[i] = NULL;
+		tasks_cond[i] = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+		printf("tasks_name[%d] is %s\n", i, tasks_name[i]);
+	}
+
 	argcv* args = malloc(sizeof(argcv));
 	args->argc = argc;
 	args->argv = argv;

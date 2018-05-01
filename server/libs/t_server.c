@@ -149,7 +149,7 @@ void* t_serve(void* p){
 
 	printf("Hold up im reading...\n");
 
-	head = readPacket(sockfd, head, ip, NULL, NULL);
+	head = readPacket(sockfd, head, ip);
 
 	list* curr = head;
 
