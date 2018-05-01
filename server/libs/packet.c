@@ -12,7 +12,7 @@ static char *DELIM = ":";
 char **tasks_name;
 int *tasks_count;
 pthread_mutex_t task_lock;
-pthread_cond_t task_conds[MAXTASKSCOUNT];
+pthread_cond_t tasks_cond[MAXTASKSCOUNT];
 pthread_cond_t add_task_cond;
 // these mutex objects should be shared between client thread and server thread somehow.
 // Maybe declare them in the main function and pass them into client & server as parameter?
@@ -176,6 +176,15 @@ list* findConnection(list* head, char *ip, char *port){
 	return NULL;
 }
 
+void print_tasks_info() {
+	printf("in print_tasks_info()\n");
+	printf("addr of tasks_name: %p; tasks_count: %p; task_lock: %p\n", &(tasks_name[0]), &(tasks_count[0]), &task_lock);
+	int i = 0;
+	for (; i < MAXTASKSCOUNT; i ++) {
+		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", i, tasks_name[i], i, tasks_count[i]);
+	}
+}
+
 // cleans up the list
 void destroyList(list* head){
 
@@ -246,6 +255,17 @@ int readOutPacket(int sockfd, char *buf){
 list* readPacket(int sockfd, list* head, char *req_ip, int *tasks_count, char **tasks_name){
 	char buf[MAXBUFSIZE];
 	memset(buf, 0, MAXBUFSIZE);
+	printf("start readPacket, before readOutPacket()\n");
+	printf("addr of tasks_name: %p; tasks_count: %p; task_lock: %p\n", &(tasks_name[0]), &(tasks_count[0]), &task_lock);
+	printf("call print_tasks_info() function\n");
+	print_tasks_info();
+	printf("manually call print_tasks_info()\n");
+	//printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", 1, tasks_name[1], 1, tasks_count[0]);
+	int test_itr = 0;
+	for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
+		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+	}
+	
 
 	readOutPacket(sockfd, buf);
 
@@ -577,12 +597,14 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 				peers_itr ++;
 			}
+			printf("Finished sending ASK_DL to all peers\n");
 			pthread_mutex_lock(&task_lock);
 			// all ASK_DL packets have been sent, now wait for server to wake me up
 			// condition wait on the corresponding condition variable
-			while (tasks_count[tasks_itr] > 0) {
-				pthread_cond_wait(&task_conds[tasks_itr], &task_lock);
-			}
+			printf("tasks_count %p\n", tasks_count);
+			//while (tasks_count[tasks_itr] > 0) {
+				pthread_cond_wait(&tasks_cond[tasks_itr], &task_lock);
+			//}
 			pthread_mutex_unlock(&task_lock);
 
 			// now combine the files and resent ASK_DL for missing segments.
@@ -617,7 +639,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 				pthread_mutex_lock(&task_lock);
 				while (tasks_count[tasks_itr] > 0) {
-					pthread_cond_wait(&task_conds[peers_itr], &task_lock);
+					pthread_cond_wait(&tasks_cond[peers_itr], &task_lock);
 				}
 				pthread_mutex_unlock(&task_lock);
 
@@ -795,7 +817,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			}
 			tasks_count[tasks_itr] --;
 			if (tasks_count[tasks_itr] == 0) {
-				pthread_cond_broadcast(&task_conds[tasks_itr]);
+				pthread_cond_broadcast(&tasks_cond[tasks_itr]);
 			}
 			pthread_mutex_unlock(&task_lock);
 

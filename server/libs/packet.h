@@ -33,7 +33,7 @@
 #define MAXTASKSCOUNT 10
 
 extern pthread_mutex_t task_lock;
-extern pthread_cond_t task_conds[MAXTASKSCOUNT];
+extern pthread_cond_t tasks_cond[MAXTASKSCOUNT];
 extern pthread_cond_t add_task_cond;
 extern char **tasks_name;
 extern int *tasks_count;
@@ -52,6 +52,7 @@ void addConnection(list* head, list* new_list);
 list* removeConnection(list* head, list* remove);
 list* findConnection(list* head, char *ip, char *port);
 void destroyList(list* head);
+void print_tasks_info();
 
 int sendHelper(int sockfd, char* packet);
 int readOutPacket(int sockfd, char* buf);

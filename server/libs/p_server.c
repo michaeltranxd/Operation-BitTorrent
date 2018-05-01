@@ -134,6 +134,17 @@ int p_server(int argc, char** argv){
 
 void* p_serve(void* p){
 	int sockfd = *(int*)p;
+	printf("start p_server, before readPacket()\n");
+	printf("addr of tasks_name: %p; tasks_count: %p; task_lock: %p\n", &(tasks_name[0]), &(tasks_count[0]), &task_lock);
+	printf("call print_tasks_info() function\n");
+	print_tasks_info();
+	printf("manually call print_tasks_info()\n");
+	//printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", 1, tasks_name[1], 1, tasks_count[0]);
+	int test_itr = 0;
+	for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
+		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+	}
+	
 
 	readPacket(sockfd, NULL, NULL, NULL, NULL);
 
