@@ -17,8 +17,6 @@
 #include <fcntl.h>
 
 
-#include "client.h"
-#include "file_transfer.h"
 
 #define MAXBUFSIZE 1024
 
@@ -37,7 +35,7 @@ extern pthread_cond_t *task_conds;
 extern pthread_cond_t add_task_cond;
 extern char **tasks_name;
 extern int *tasks_count;
-extern pthread_cond_t test_cond;
+//extern pthread_cond_t test_cond;
 
 typedef struct list{
 	char *ip;
@@ -48,6 +46,7 @@ typedef struct list{
 list* connectAll(list* head, char* filename, int* numConnections, char* buf, char* ip);
 long long connectAndSend(list* node, char* filename);
 list* newConnection(list* head, char* ip, char* port);
+void print_tasks_info();
 
 void addConnection(list* head, list* new_list);
 list* removeConnection(list* head, list* remove);

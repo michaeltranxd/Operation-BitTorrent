@@ -5,7 +5,6 @@
 #ifndef P_SERVER_H
 #define P_SERVER_H
 
-#include "packet.h"
 
 /**
  *	Method to handle child signals

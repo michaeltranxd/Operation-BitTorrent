@@ -5,6 +5,8 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+#include <stdio.h>
+
 int getConnection(char* hostname, char* port);
 /**
  *	Main method for client that runs the client

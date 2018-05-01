@@ -115,8 +115,8 @@ int main(int argc, char** argv){
 		perror("Failed cond_init() for add_task_cond");
 	}
 
-	if (pthread_cond_init(&test_cond, NULL) != 0)
-		perror("Failed cond_init() for test_cond");
+	//if (pthread_cond_init(&test_cond, NULL) != 0)
+	//	perror("Failed cond_init() for test_cond");
 	tasks_name = malloc(sizeof(char *) * MAXTASKSCOUNT);
 	tasks_count = malloc(sizeof(int) * MAXTASKSCOUNT);
 	

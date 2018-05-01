@@ -1,6 +1,9 @@
 
 #include "packet.h"
-#include "../peer.h"
+//#include "../peer.h"
+#include "client.h"
+#include "p_server.h"
+#include "file_transfer.h"
 
 #define MAXBUFSIZE 1024
 #define MAXTASKSCOUNT 10
@@ -14,7 +17,6 @@ int *tasks_count;
 pthread_mutex_t task_lock;
 pthread_cond_t *task_conds;
 pthread_cond_t add_task_cond;
-pthread_cond_t test_cond;
 // these mutex objects should be shared between client thread and server thread somehow.
 // Maybe declare them in the main function and pass them into client & server as parameter?
 
@@ -118,6 +120,15 @@ list* newConnection(list* head, char *ip, char *port){
 	return head;
 }
 
+void print_tasks_info() {
+	printf("in print_tasks_info()\n");
+	printf("addr of tasks_name: %p; tasks_count: %p\n", &(tasks_name[0]), &(tasks_count[0]));
+	int i = 0;
+	for (; i < MAXTASKSCOUNT; i ++) {
+		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", i, tasks_name[i], i, tasks_count[i]);
+	}
+}
+
 // adds the connection
 void addConnection(list* head, list* new_list){
 	list* curr = head;
@@ -208,6 +219,17 @@ int sendHelper(int sockfd, char *packet){
 
 // function that simply reads out the packet
 int readOutPacket(int sockfd, char *buf){
+	printf("start readOutPacket\n");
+	//printf("addr of tasks_name: %p; tasks_count: %p\n", &(tasks_name[0]), &(tasks_count[0]));
+	//printf("call print_tasks_info() function\n");
+	//print_tasks_info();
+	//printf("manually call print_tasks_info()\n");
+	////printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", 1, tasks_name[1], 1, tasks_count[0]);
+	//int test_itr = 0;
+	//for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
+	//	printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+	//}
+	
 	int rv = 0;
 
 	char data_in_byte;
@@ -247,6 +269,17 @@ int readOutPacket(int sockfd, char *buf){
 list* readPacket(int sockfd, list* head, char *req_ip, int *tasks_count, char **tasks_name){
 	char buf[MAXBUFSIZE];
 	memset(buf, 0, MAXBUFSIZE);
+	printf("start readPacket, before readOutPacket()\n");
+	//printf("addr of tasks_name: %p; tasks_count: %p\n", &(tasks_name[0]), &(tasks_count[0]));
+	//printf("call print_tasks_info() function\n");
+	//print_tasks_info();
+	//printf("manually call print_tasks_info()\n");
+	////printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", 1, tasks_name[1], 1, tasks_count[0]);
+	//int test_itr = 0;
+	//for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
+	//	printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+	//}
+	
 
 	readOutPacket(sockfd, buf);
 
@@ -261,6 +294,8 @@ list* readPacket(int sockfd, list* head, char *req_ip, int *tasks_count, char **
 
 // just parsing to find the packet number
 int parse_packet_header(char *buf){
+	printf("start parse_packet_header()\n");
+	printf("addr of tasks_name: %p; tasks_count: %p\n", &(tasks_name[0]), &(tasks_count[0]));
 
 	char *buf_copy = strdup(buf);
 	char *orig = buf_copy; 					// part of cleanup
@@ -295,6 +330,8 @@ int parse_packet_header(char *buf){
 
 // this method will be running when receiving packets
 list* decodePacket(int dl_sockfd, char *buf, list* head, char *req_ip, int *tasks_count, char **tasks_name){
+	printf("start decodePacket()\n");
+	printf("addr of tasks_name: %p; tasks_count: %p\n", &(tasks_name[0]), &(tasks_count[0]));
 
 	int packet_num = parse_packet_header(buf);
 
@@ -305,6 +342,8 @@ list* decodePacket(int dl_sockfd, char *buf, list* head, char *req_ip, int *task
 
 // this method focused on building packets to send
 void makePacket(char *buf, char *filename, char *ip, char *port, size_t filesize, int index, int packet_num){
+	printf("start readPacket, makePacket()\n");
+	printf("addr of tasks_name: %p; tasks_count: %p\n", &(tasks_name[0]), &(tasks_count[0]));
 	
 
 	memset(buf, 0, MAXBUFSIZE);
@@ -338,6 +377,17 @@ void makePacket(char *buf, char *filename, char *ip, char *port, size_t filesize
 
 // this method is designed to be sending packets
 long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, size_t filesize, int index, int packet_num){
+	printf("start sendPacket()\n");
+	printf("addr of tasks_name: %p; tasks_count: %p\n", &(tasks_name[0]), &(tasks_count[0]));
+	printf("call print_tasks_info() function\n");
+	print_tasks_info();
+	printf("manually call print_tasks_info()\n");
+	//printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", 1, tasks_name[1], 1, tasks_count[0]);
+	int test_itr = 0;
+	for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
+		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+	}
+	
 
 	makePacket(buf, filename, ip, port, filesize, index, packet_num); // creates the packet according to
 								 // the packet_num
@@ -375,12 +425,6 @@ long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port
 	return rv;
 }
 
-static void print_tasks_info() {
-	int i = 0;
-	for (; i < MAXTASKSCOUNT; i ++) {
-		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", i, tasks_name[i], i, tasks_count[i]);
-	}
-}
 
 static int find_task(char *filename) {
 	int itr = 0;
@@ -420,6 +464,19 @@ static int add_task(char *filename, size_t segment_count){
 // packet_num corresponds to the kinds of packets we have defined
 // this method is designed to be decoding received packets
 list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char *req_ip, int *tasks_count, char **tasks_name){
+	printf("start decodePacketNum\n");
+	printf("addr of tasks_name: %p; tasks_count: %p\n", &(tasks_name[0]), &(tasks_count[0]));
+	printf("start readPacket, before readOutPacket()\n");
+	printf("addr of tasks_name: %p; tasks_count: %p\n", &(tasks_name[0]), &(tasks_count[0]));
+	printf("call print_tasks_info() function\n");
+	print_tasks_info();
+	//printf("manually call print_tasks_info()\n");
+	////printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", 1, tasks_name[1], 1, tasks_count[0]);
+	//int test_itr = 0;
+	//for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
+	//	printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+	//}
+	
 
 	char *buf_copy = strdup(buf);
 	char *orig = buf_copy; 				// part of cleanup
@@ -511,6 +568,17 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				return NULL;
 			} 
 			printf("(received RESP_REQ) filename:%s, my ip:%s, my port:%s\n", filename, ip, port);
+
+
+			printf("before parsing peers_ip and peers_port\n");
+			printf("call print_tasks_info() function\n");
+			print_tasks_info();
+			//printf("manually call print_tasks_info()\n");
+			//printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", 1, tasks_name[1], 1, tasks_count[0]);
+			//test_itr = 0;
+			//for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
+			//	printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+			//}
 			
 
 			// parse the rest of the RESP_REQ packet to get ip, port of peers, and segment_count.
@@ -547,6 +615,17 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			}
 			printf("(received RESP_REQ) either find_task(%s) succeed or add_task(%s) succeed, now proceed\n", filename, filename);
 			pthread_mutex_unlock(&task_lock);
+
+			printf("before sending out ASK_DL\n");
+			printf("call print_tasks_info() function\n");
+			print_tasks_info();
+			//print_tasks_info();
+			//printf("manually call print_tasks_info()\n");
+			////printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", 1, tasks_name[1], 1, tasks_count[0]);
+			//test_itr = 0;
+			//for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
+			//	printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+			//}
 
 
 			peers_itr = 0;
@@ -585,28 +664,28 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			printf("Finished sendPacket() to all available peers\n");
 			printf("call print_tasks_info() function\n");
 			print_tasks_info();
-			printf("manually call print_tasks_info()\n");
-			int test_itr = 0;
-			for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
-				printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
-			}
+			//printf("manually call print_tasks_info()\n");
+			////printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", 1, tasks_name[1], 1, tasks_count[0]);
+			//test_itr = 0;
+			//for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
+			//	printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+			//}
 
-			sleep(5);
 
 ///////////////////////
 			printf("Start mutex_lock(), peers_itr is %d\n", peers_itr);
 			pthread_mutex_lock(&task_lock);
 			printf("(after mutex_lock()) manually call print_tasks_info()\n");
-			test_itr = 0;
-			for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
-				printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
-			}
+			//test_itr = 0;
+			//for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
+			//	printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+			//}
 			// all ASK_DL packets have been sent, now wait for server to wake me up
 			// condition wait on the corresponding condition variable
 			printf("Entered mutex_lock(), tasks_count[%d] is %d\n", tasks_itr, tasks_count[tasks_itr]);
 			while (tasks_count[tasks_itr] > 0)
-				//pthread_cond_wait(&task_conds[tasks_itr], &task_lock);
-				pthread_cond_wait(&test_cond, &task_lock);
+				pthread_cond_wait(&task_conds[tasks_itr], &task_lock);
+				//pthread_cond_wait(&test_cond, &task_lock);
 			printf("Finished cond_wait()\n");
 			pthread_mutex_unlock(&task_lock);
 			printf("Finished mutex_unlock()\n");
@@ -660,8 +739,8 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				pthread_mutex_lock(&task_lock);
 				printf("Entered mutex_lock()\n");
 				while (tasks_count[tasks_itr] > 0) {
-					//pthread_cond_wait(&task_conds[peers_itr], &task_lock);
-					pthread_cond_wait(&test_cond, &task_lock);
+					pthread_cond_wait(&task_conds[peers_itr], &task_lock);
+					//pthread_cond_wait(&test_cond, &task_lock);
 				}
 				printf("Finished cond_wait()\n");
 				pthread_mutex_unlock(&task_lock);
@@ -807,6 +886,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			break;
 
 		case START_SD:
+			sleep(5);
 			printf("Start START_SD handle\n");
 			filename = strtok(NULL, DELIM);
 			printf("(START_SD) filename received is %s\n", filename);
@@ -843,8 +923,8 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			tasks_count[tasks_itr] --;
 			if (tasks_count[tasks_itr] == 0) {
 				printf("(received START_SD) tasks_count[%d] reaches 0, now wake up client thread\n", tasks_itr);
-				//pthread_cond_broadcast(&task_conds[tasks_itr]);
-				pthread_cond_broadcast(&test_cond);
+				pthread_cond_broadcast(&task_conds[tasks_itr]);
+				//pthread_cond_broadcast(&test_cond);
 			}
 			pthread_mutex_unlock(&task_lock);
 
