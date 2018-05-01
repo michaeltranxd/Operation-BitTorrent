@@ -252,7 +252,7 @@ int readOutPacket(int sockfd, char *buf){
 }
 
 // method that server.c will call
-list* readPacket(int sockfd, list* head, char *req_ip, int *tasks_count, char **tasks_name){
+list* readPacket(int sockfd, list* head, char *req_ip){
 	char buf[MAXBUFSIZE];
 	memset(buf, 0, MAXBUFSIZE);
 	printf("start readPacket, before readOutPacket()\n");
@@ -269,7 +269,7 @@ list* readPacket(int sockfd, list* head, char *req_ip, int *tasks_count, char **
 
 	readOutPacket(sockfd, buf);
 
-	list* rv = decodePacket(sockfd, buf, head, req_ip, tasks_count, tasks_name);
+	list* rv = decodePacket(sockfd, buf, head, req_ip);
 
 //	shutdown(sockfd, 0); // read shutdowned
 
@@ -313,11 +313,11 @@ int parse_packet_header(char *buf){
 }
 
 // this method will be running when receiving packets
-list* decodePacket(int dl_sockfd, char *buf, list* head, char *req_ip, int *tasks_count, char **tasks_name){
+list* decodePacket(int dl_sockfd, char *buf, list* head, char *req_ip){
 
 	int packet_num = parse_packet_header(buf);
 
-	return decodePacketNum(dl_sockfd, buf, packet_num, head, req_ip, tasks_count, tasks_name);
+	return decodePacketNum(dl_sockfd, buf, packet_num, head, req_ip);
 
 }
 
@@ -437,7 +437,7 @@ static int add_task(char *filename){
 
 // packet_num corresponds to the kinds of packets we have defined
 // this method is designed to be decoding received packets
-list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char *req_ip, int *tasks_count, char **tasks_name){
+list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char *req_ip){
 
 	char *buf_copy = strdup(buf);
 	char *orig = buf_copy; 				// part of cleanup

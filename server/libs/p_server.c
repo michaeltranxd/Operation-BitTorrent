@@ -146,7 +146,7 @@ void* p_serve(void* p){
 	}
 	
 
-	readPacket(sockfd, NULL, NULL, NULL, NULL);
+	readPacket(sockfd, NULL, NULL);
 
 	close(sockfd);
 	free(p);

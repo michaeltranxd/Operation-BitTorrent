@@ -16,7 +16,6 @@
 #include <pthread.h>
 #include <fcntl.h>
 
-#include "var.h"
 #include "client.h"
 #include "file_transfer.h"
 
@@ -29,6 +28,12 @@
 #define ASK_DL			5
 #define START_SD		6
 
+#define MAXTASKSCOUNT 10
+extern pthread_mutex_t task_lock;
+extern pthread_cond_t tasks_cond[MAXTASKSCOUNT];
+extern pthread_cond_t add_task_cond;
+extern char **tasks_name;
+extern int *tasks_count;
 
 
 typedef struct list{
@@ -49,10 +54,10 @@ void print_tasks_info();
 
 int sendHelper(int sockfd, char* packet);
 int readOutPacket(int sockfd, char* buf);
-list* readPacket(int sockfd, list* head, char *req_ip, int* tasks_count, char** tasks_name);
+list* readPacket(int sockfd, list* head, char *req_ip);
 
 int parse_packet_header(char* buf);
-list* decodePacket(int dl_sockfd, char* buf, list* head, char *req_ip, int* tasks_count, char**tasks_name);
+list* decodePacket(int dl_sockfd, char* buf, list* head, char *req_ip);
 void makePacket(char *buf, char *filename, char *ip, char *port, size_t filesize, int index, int packet_num);
 long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, size_t filesize, int index, int packet_num);
 
@@ -63,7 +68,7 @@ long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port
 
 // need to pass in the current sockfd that receives START_SD, so i pass a sockfd into related functions.
 // This is due to how receiving START_SD work. After receiving START_SD packet the server will call recv_file() on the same sockfd, so the server needs to know the sockfd.
-list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char *req_ip, int* tasks_count, char** tasks_name);
+list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char *req_ip);
 
 // types of packet
 int ask_reqPacket(char *buf, char *filename, char *port);
