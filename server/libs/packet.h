@@ -50,7 +50,7 @@ list* newConnection(list* head, char* ip, char* port);
 
 void addConnection(list* head, list* new_list);
 list* removeConnection(list* head, list* remove);
-list* findConnection(list* head, char *ip);
+list* findConnection(list* head, char *ip, char *port);
 void destroyList(list* head);
 
 int sendHelper(int sockfd, char* packet);

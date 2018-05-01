@@ -334,6 +334,14 @@ int* combine_file(char *base_filename, int segment_count) {
 void schedule_segment_size (size_t *segments, size_t filesize, int segment_count) {
 	size_t old_size = filesize;
 	size_t page_size = (size_t) sysconf(_SC_PAGESIZE);
+	
+	
+	if (old_size < page_size * 2) { // if the target file is less than 2 pages large, just send the entire file
+		segments[0] = filesize;
+		return;
+	}
+
+
 	size_t extra_size = 0;
 	if (old_size % page_size != 0) {
 		extra_size = page_size - (old_size % page_size);
@@ -343,14 +351,15 @@ void schedule_segment_size (size_t *segments, size_t filesize, int segment_count
 
 	int page_count = new_size / page_size;
 	size_t regular_segment_size = (page_count / segment_count) * page_size; // 5 / 3 = 1
-	size_t last_segment_size = (page_count % segment_count) * page_size;
+	size_t last_segment_size = (page_count % segment_count) * page_size + regular_segment_size;
 
 	int itr = 0;
-	while (itr < segment_count) {
+	while (itr < segment_count - 1) {
 		segments[itr] = regular_segment_size;
 		printf("segment size %zd\n", segments[itr]);
 		itr ++;
 	}
 	segments[itr] = last_segment_size;
+	printf("last segment size is %zd\n", segments[itr]);
 }
 

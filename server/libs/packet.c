@@ -108,7 +108,7 @@ list* newConnection(list* head, char *ip, char *port){
 		return new_list;
 	}
 
-	list* node = findConnection(head, ip);
+	list* node = findConnection(head, ip, port);
 
 	if(node == NULL){ // did not find it so we add
 		addConnection(head, new_list);
@@ -160,14 +160,14 @@ list* removeConnection(list* head, list* remove){ // should only be called when 
 }
 
 // helper function that finds connection
-list* findConnection(list* head, char *ip){
+list* findConnection(list* head, char *ip, char *port){
 	list* curr = head;
 
 	if(curr == NULL)
 		return NULL;
 
 	while(curr != NULL){
-		if(!strcmp(curr->ip, ip)){
+		if(!strcmp(curr->ip, ip) && (!strcmp(curr -> port, port))){
 			return curr;
 		}
 		curr = curr->next;
@@ -549,6 +549,10 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			printf("Segment size after %zd\n", segments[0]);	
 			peers_itr = 0;
 			sockfd = 0;
+
+			if (segments[0] == filesize) {
+				segment_count = 1;
+			}
 			while (peers_itr < segment_count) {
 				char buf[MAXBUFSIZE];
 				sockfd = getConnection(peers_ip[peers_itr], peers_port[peers_itr]);
@@ -576,7 +580,9 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			pthread_mutex_lock(&task_lock);
 			// all ASK_DL packets have been sent, now wait for server to wake me up
 			// condition wait on the corresponding condition variable
-			pthread_cond_wait(&task_conds[tasks_itr], &task_lock);
+			while (tasks_count[tasks_itr] > 0) {
+				pthread_cond_wait(&task_conds[tasks_itr], &task_lock);
+			}
 			pthread_mutex_unlock(&task_lock);
 
 			// now combine the files and resent ASK_DL for missing segments.
