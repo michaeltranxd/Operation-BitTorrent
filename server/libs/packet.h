@@ -58,8 +58,8 @@ list* readPacket(int sockfd, list* head, char *req_ip);
 
 int parse_packet_header(char* buf);
 list* decodePacket(int dl_sockfd, char* buf, list* head, char *req_ip);
-void makePacket(char *buf, char *filename, char *ip, char *port, size_t filesize, int index, int packet_num);
-long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, size_t filesize, int index, int packet_num);
+void makePacket(char *buf, char *filename, char *ip, char *port, size_t filesize, size_t reg_segment_size, int index, int packet_num);
+long long sendPacket(int sockfd, char* buf, char* filename, char* ip, char* port, size_t filesize, size_t reg_segment_size, int index, int packet_num);
 
 // changed the way of reading packet (it is read byte by byte now)
 
@@ -81,7 +81,7 @@ int ask_availPacket(char *buf, char *filename);
 int resp_availPacket(char *buf, char *filename, size_t filesize);
 
 // major update in these two packets. Delete the "resp_dlPacket", dont need it.
-int ask_dlPacket(char *buf, char *filename, size_t filesize, size_t index, char* ip, char* port);
+int ask_dlPacket(char *buf, char *filename, size_t filesize, size_t index, size_t reg_segment_size, char* ip, char* port);
 int start_sdPacket(char *buf, char *filename, size_t filesize, size_t index);
 
 #endif

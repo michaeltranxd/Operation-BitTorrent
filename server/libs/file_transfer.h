@@ -49,7 +49,7 @@ size_t read_from_socket(int sockfd, const char *msg, size_t msg_length);
  *  
  * 
  */
-size_t send_file(char *filename, int sockfd, size_t index, size_t file_size);
+size_t send_file(char *filename, int sockfd, size_t index, size_t file_size, size_t reg_segment_size);
 
 /**
  * Read data from sockfd and write it to a new file. 

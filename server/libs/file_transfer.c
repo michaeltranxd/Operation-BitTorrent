@@ -66,7 +66,7 @@ size_t read_from_socket(int sockfd, const char *msg, size_t msg_length) {
 }
 
 
-size_t send_file(char* filename, int sockfd, size_t index, size_t filesize){
+size_t send_file(char* filename, int sockfd, size_t index, size_t filesize, size_t reg_segment_size){
 	if (index == 0) {  // sending the whole file instead of a partition of it
 		FILE* fp = fopen(filename, "r");
 		if (!fp) {
@@ -123,7 +123,7 @@ size_t send_file(char* filename, int sockfd, size_t index, size_t filesize){
 		
 		//size_t page_size = (size_t) sysconf(_SC_PAGESIZE);
 
-		size_t offset = (index - 1) * filesize;
+		size_t offset = (index - 1) * reg_segment_size;
 		void *addr0 = mmap(NULL, old_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 		if (addr0 == MAP_FAILED) {
 			perror("Error mmap()");
