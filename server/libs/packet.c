@@ -10,7 +10,7 @@ static char *DELIM = ":";
 
 
 char **tasks_name;
-int *tasks_count;
+size_t *tasks_count;
 pthread_mutex_t task_lock;
 pthread_cond_t tasks_cond[MAXTASKSCOUNT];
 pthread_cond_t add_task_cond;
@@ -181,7 +181,7 @@ void print_tasks_info() {
 	printf("addr of tasks_name: %p; tasks_count: %p; task_lock: %p\n", &(tasks_name[0]), &(tasks_count[0]), &task_lock);
 	int i = 0;
 	for (; i < MAXTASKSCOUNT; i ++) {
-		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", i, tasks_name[i], i, tasks_count[i]);
+		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %zu\n", i, tasks_name[i], i, tasks_count[i]);
 	}
 }
 
@@ -263,7 +263,7 @@ list* readPacket(int sockfd, list* head, char *req_ip){
 	//printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", 1, tasks_name[1], 1, tasks_count[0]);
 	int test_itr = 0;
 	for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
-		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %zu\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
 	}
 	
 
@@ -417,7 +417,7 @@ static int find_task(char *filename) {
 	return -1;
 }
 
-static int add_task(char *filename){
+static int add_task(char *filename, size_t file_size){
 	int itr = 0;
 	printf("(add_task) filename is %s\n", filename);
 	while (itr < MAXTASKSCOUNT) {
@@ -425,7 +425,8 @@ static int add_task(char *filename){
 		if (tasks_name[itr] == NULL) {
 			//tasks_name[itr] = strndup(filename, strlen(filename));
 			tasks_name[itr] = filename;
-			printf("return itr %d %s\n", itr, tasks_name[itr]);
+			tasks_count[itr] = file_size;
+			printf("return itr %d, tasks_name %s, tasks_count %zu\n", itr, tasks_name[itr], tasks_count[itr]);
 			return itr;
 		}
 		itr ++;
@@ -538,7 +539,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			tasks_itr = find_task(filename);
 			printf("finished find_task() for filename:%s\n", filename);
 			if (tasks_itr == -1)
-				tasks_itr = add_task(filename);
+				tasks_itr = add_task(filename, filesize);
 			if (tasks_itr == -1) 
 				// we reach MAXTASKSCOUNT, wait till there's a spot in tasks_name so i can add task // TODO NEXT
 				pthread_cond_wait(&add_task_cond, &task_lock);

@@ -142,7 +142,7 @@ void* p_serve(void* p){
 	//printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", 1, tasks_name[1], 1, tasks_count[0]);
 	int test_itr = 0;
 	for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
-		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %zu\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
 	}
 	
 
