@@ -615,7 +615,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			printf("tasks_count %p\n", tasks_count);
 			while (tasks_count[tasks_itr] > 0) {
 				pthread_cond_wait(&tasks_cond[tasks_itr], &task_lock);
-			//}
+			}
 			pthread_mutex_unlock(&task_lock);
 
 			// now combine the files and resent ASK_DL for missing segments.
