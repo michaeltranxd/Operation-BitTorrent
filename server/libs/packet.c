@@ -222,20 +222,20 @@ int readOutPacket(int sockfd, char *buf){
 
 	memset(buf, 0, MAXBUFSIZE);
 
-	printf("Starting readOutPacket()\n");
-	printf("socket readOutPacket:%d\n", sockfd);
+	//printf("Starting readOutPacket()\n");
+	printf("(in readOutPacket) socket:%d\n", sockfd);
 
 	if((read(sockfd, &data_in_byte, 1)) == -1){
 		perror("failed!");
 		return -1;
 	}
 
-	printf("Recveived first byte\n");
+	//printf("Recveived first byte\n");
 
 	
 	int itr = 0;
 	while (data_in_byte != '\n') {
-		printf("char: %c\n", data_in_byte);
+		//printf("char: %c\n", data_in_byte);
 		buf[itr] = data_in_byte;
 		if (read(sockfd, &data_in_byte, 1) == -1)
 			return -1;
@@ -255,16 +255,16 @@ int readOutPacket(int sockfd, char *buf){
 list* readPacket(int sockfd, list* head, char *req_ip){
 	char buf[MAXBUFSIZE];
 	memset(buf, 0, MAXBUFSIZE);
-	printf("start readPacket, before readOutPacket()\n");
-	printf("addr of tasks_name: %p; tasks_count: %p; task_lock: %p\n", &(tasks_name[0]), &(tasks_count[0]), &task_lock);
-	printf("call print_tasks_info() function\n");
-	print_tasks_info();
-	printf("manually call print_tasks_info()\n");
+	//printf("start readPacket, before readOutPacket()\n");
+	//printf("addr of tasks_name: %p; tasks_count: %p; task_lock: %p\n", &(tasks_name[0]), &(tasks_count[0]), &task_lock);
+	//printf("call print_tasks_info() function\n");
+	//print_tasks_info();
+	//printf("manually call print_tasks_info()\n");
 	//printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", 1, tasks_name[1], 1, tasks_count[0]);
-	int test_itr = 0;
-	for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
-		printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
-	}
+	//int test_itr = 0;
+	//for (; test_itr < MAXTASKSCOUNT; test_itr ++) {
+	//	printf("task name at tasks_name[%d] is: %s, task count at tasks_count[%d] is %d\n", test_itr, tasks_name[test_itr], test_itr, tasks_count[test_itr]);
+	//}
 	
 
 	readOutPacket(sockfd, buf);
@@ -403,7 +403,7 @@ static void print_tasks_name() {
 
 static int find_task(char *filename) {
 	int itr = 0;
-	printf("(find_task) filename is %s\n", filename);
+	//printf("(find_task) filename is %s\n", filename);
 	//print_tasks_name();
 	for (; itr < MAXTASKSCOUNT; itr ++) {
 		//printf("(find_task)looking at tasks_name[%d]\n", itr);
@@ -426,7 +426,7 @@ static int add_task(char *filename, int segment_count){
 			//tasks_name[itr] = strndup(filename, strlen(filename));
 			tasks_name[itr] = filename;
 			tasks_count[itr] = segment_count;
-			printf("return itr %d, tasks_name %s, tasks_count %d\n", itr, tasks_name[itr], tasks_count[itr]);
+			//printf("return itr %d, tasks_name %s, tasks_count %d\n", itr, tasks_name[itr], tasks_count[itr]);
 			return itr;
 		}
 		itr ++;
@@ -475,20 +475,20 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 			head = newConnection(head, ip, port);
 
-			printf("PRINTING LIST!\n");
+			//printf("PRINTING LIST!\n");
 			list* curr = head;
 			while(curr != NULL){
 				printf("%s\n", curr->ip);
 				printf("%s\n", curr->port);
 				curr = curr->next;
 			}
-			printf("PRINTING LIST!\n");
+			//printf("PRINTING LIST!\n");
 
 			//printf("making packet\n");
 			// making RESP_REQ
 			makePacket(buf, filename, ip, port, 0, 0, RESP_REQ);
 
-			printf("Starting connectAll() \n");
+			//printf("Starting connectAll() \n");
 			head = connectAll(head, filename, &numUsers, buf, ip);
 
 			if (numUsers != 0) {
@@ -534,49 +534,49 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 
 			printf("(received RESP_REQ) filename:%s, ip:%s, port:%s\n", filename, ip, port);
 
-			fprintf(stderr, "MUTEX UNLOCK SUCCESS\n");
+			//fprintf(stderr, "MUTEX UNLOCK SUCCESS\n");
 			char **peers_ip = malloc(MAXPEERSCOUNT * sizeof(char *));
 			char **peers_port = malloc(MAXPEERSCOUNT * sizeof(char *));
 			fprintf(stderr, "%d %zd\n", MAXPEERSCOUNT, sizeof(peers_ip));
 			char *token;
 			int peers_itr = 0;
 			while ((token = strtok(NULL, DELIM)) != NULL) {
-				fprintf(stderr, "TOKEN %s\n", token);
+				//fprintf(stderr, "TOKEN %s\n", token);
 				peers_ip[peers_itr] = strdup(token);
-				fprintf(stderr, "accessed peer ip!\n");
+				//fprintf(stderr, "accessed peer ip!\n");
 				token = strtok(NULL, DELIM);
-				fprintf(stderr, "Accessing port: %s\n", token);
+				//fprintf(stderr, "Accessing port: %s\n", token);
 				peers_port[peers_itr] = strdup(token);
-				printf("peers_ip[%d] is %s, peers_port[%d] is %s\n", peers_itr, peers_ip[peers_itr], peers_itr, peers_port[peers_itr]);
+				//printf("peers_ip[%d] is %s, peers_port[%d] is %s\n", peers_itr, peers_ip[peers_itr], peers_itr, peers_port[peers_itr]);
 				peers_itr ++;
 			}
-			fprintf(stderr, "token parsing done\n");
+			//fprintf(stderr, "token parsing done\n");
 			int segment_count = peers_itr;
 			size_t *segments = (size_t *)malloc(segment_count * sizeof(size_t)); // records size of each segment
 			schedule_segment_size(segments, filesize, segment_count);
+			if (segments[0] == filesize) {
+				segment_count = 1;
+			}
 		
-			printf("Segment size after %zd\n", segments[0]);	
+			//printf("Segment size after %zd\n", segments[0]);	
 
 			pthread_mutex_lock(&task_lock);
-			printf("start find_task()\n");
+			//printf("start find_task()\n");
 			print_tasks_name();
 			tasks_itr = find_task(filename);
-			printf("finished find_task() for filename:%s\n", filename);
+			//printf("finished find_task() for filename:%s\n", filename);
 			if (tasks_itr == -1)
 				tasks_itr = add_task(filename, segment_count);
 			if (tasks_itr == -1) 
 				// we reach MAXTASKSCOUNT, wait till there's a spot in tasks_name so i can add task // TODO NEXT
 				pthread_cond_wait(&add_task_cond, &task_lock);
-			print_tasks_info();
-			printf("CONDWAIT\n");
+			//print_tasks_info();
+			//printf("CONDWAIT\n");
 			pthread_mutex_unlock(&task_lock);
 
 			peers_itr = 0;
 			int peer_fd = 0;
 
-			if (segments[0] == filesize) {
-				segment_count = 1;
-			}
 			while (peers_itr < segment_count) {
 				char buf[MAXBUFSIZE];
 				peer_fd = getConnection(peers_ip[peers_itr], peers_port[peers_itr]);
@@ -599,7 +599,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 					} 
 				}
 
-				printf("Finished sendPacket() to the %dth peer\n", peers_itr);
+				//printf("Finished sendPacket() to the %dth peer\n", peers_itr);
 
 //				if (p_client(sockfd, peers_ip[peers_itr], peers_port[peers_itr], filename, buf, segments[peers_itr], peers_itr, ASK_DL) != 0) {
 					// p_client send ASK_DL to the target peer given sockfd
@@ -616,7 +616,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			pthread_mutex_lock(&task_lock);
 			// all ASK_DL packets have been sent, now wait for server to wake me up
 			// condition wait on the corresponding condition variable
-			printf("tasks_count %p\n", tasks_count);
+			//printf("tasks_count %p\n", tasks_count);
 			while (tasks_count[tasks_itr] > 0) {
 				pthread_cond_wait(&tasks_cond[tasks_itr], &task_lock);
 			}
@@ -816,22 +816,22 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				return NULL;
 			} 
 
-			printf("About to receive\n");
+			//printf("About to receive\n");
 			if (recv_file(filename, dl_sockfd, index, filesize) != filesize) {
 				printf("Failed recv_file()\n");
 //				free(args);
 				return NULL;
 			}
-			printf("BEFORE MUTEX\n");
+			//printf("BEFORE MUTEX\n");
 			pthread_mutex_lock(&task_lock);
-			printf("AFTER MUTEX\n");
+			//printf("AFTER MUTEX\n");
 			tasks_itr = find_task(filename);
 			if (tasks_itr == -1) {
 				printf("Failed find_task(): task is not in the tasks array");
 				pthread_mutex_unlock(&task_lock);
 				break;
 			}
-			printf("find_task(%s) returns %d\n", filename, tasks_itr);
+			//printf("find_task(%s) returns %d\n", filename, tasks_itr);
 			tasks_count[tasks_itr] --;
 			if (tasks_count[tasks_itr] == 0) {
 				pthread_cond_broadcast(&tasks_cond[tasks_itr]);

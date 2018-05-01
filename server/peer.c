@@ -116,7 +116,7 @@ int main(int argc, char** argv){
 	for (; i < MAXTASKSCOUNT; i ++) {
 		tasks_name[i] = NULL;
 		tasks_cond[i] = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
-		printf("tasks_name[%d] is %s\n", i, tasks_name[i]);
+		//printf("tasks_name[%d] is %s\n", i, tasks_name[i]);
 	}
 	struct ifaddrs *addrs, *tmp;
 

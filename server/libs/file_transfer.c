@@ -121,9 +121,9 @@ size_t send_file(char* filename, int sockfd, size_t index, size_t filesize){
 		
 		size_t old_size = s.st_size; // original file size of fd
 		
-		size_t page_size = (size_t) sysconf(_SC_PAGESIZE);
+		//size_t page_size = (size_t) sysconf(_SC_PAGESIZE);
 
-		size_t offset = (index - 1) * page_size;
+		size_t offset = (index - 1) * filesize;
 		void *addr0 = mmap(NULL, old_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 		if (addr0 == MAP_FAILED) {
 			perror("Error mmap()");

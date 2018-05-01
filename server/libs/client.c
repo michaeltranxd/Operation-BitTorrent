@@ -49,7 +49,7 @@ int getConnection(char* hostname, char* port){
 			continue;
 		}
 
-		printf("ha\n");
+		//printf("ha\n");
 
 		if(connect(sockfd, p->ai_addr, p->ai_addrlen) == -1){
 			printf("closed:socket\n");
@@ -61,7 +61,7 @@ int getConnection(char* hostname, char* port){
 		break;
 	}
 
-	printf("p == NULL\n");
+	//printf("p == NULL\n");
 
 	if(p == NULL){
 		fprintf(stderr, "client: failed to connect\n");
@@ -69,7 +69,7 @@ int getConnection(char* hostname, char* port){
 	}
 
 
-	printf("inet_ntop\n");
+	//printf("inet_ntop\n");
 
 	inet_ntop(p->ai_family, get_in_addr((struct sockaddr*)p->ai_addr), s, sizeof s);
 	printf("client: connecting to %s\n", s);
