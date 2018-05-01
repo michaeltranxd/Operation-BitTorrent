@@ -916,7 +916,7 @@ int ask_dlPacket(char *buf, char *filename, size_t filesize, size_t index, size_
 	// 	if (index > 0), send the corresponding segment of index
 	char *header = "ASK_DL";
 
-	sprintf(buf, "%s:%s:%zu:%zu:%zu%s:%s", header, filename, filesize, index, reg_segment_size, ip, port);
+	sprintf(buf, "%s:%s:%zu:%zu:%zu:%s:%s", header, filename, filesize, index, reg_segment_size, ip, port);
 	
 	buf[strlen(buf)] = '\n';
 
