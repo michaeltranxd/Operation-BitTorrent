@@ -542,6 +542,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 			if (tasks_itr == -1) 
 				// we reach MAXTASKSCOUNT, wait till there's a spot in tasks_name so i can add task // TODO NEXT
 				pthread_cond_wait(&add_task_cond, &task_lock);
+			print_tasks_info();
 			printf("CONDWAIT\n");
 			pthread_mutex_unlock(&task_lock);
 
