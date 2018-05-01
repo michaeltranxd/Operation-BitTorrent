@@ -830,6 +830,7 @@ list* decodePacketNum(int dl_sockfd, char *buf, int packet_num, list* head, char
 				pthread_mutex_unlock(&task_lock);
 				break;
 			}
+			printf("find_task(%s) returns %d\n", filename, tasks_itr);
 			tasks_count[tasks_itr] --;
 			if (tasks_count[tasks_itr] == 0) {
 				pthread_cond_broadcast(&tasks_cond[tasks_itr]);
