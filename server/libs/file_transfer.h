@@ -28,7 +28,7 @@ size_t read_from_socket(int sockfd, const char *msg, size_t msg_length);
  * segment of it), file_index should be set to 0. In this case, file_size also \
  * represents the size of the entire file, instead of its partition's
  *
- * @para 
+ * @para
  *  	filename: 		Name of the file
  *
  *  	sockfd: 		Socket file descriptor
@@ -37,51 +37,55 @@ size_t read_from_socket(int sockfd, const char *msg, size_t msg_length);
  *  	not just a segment of it. Other wise, file_index should start with 1. \
  *  	It marks which segment of the file to be sent.
  *
- *  	file_size: 		Size of the segment/entire file that will be sent. 
+ *  	file_size: 		Size of the data (segment/ entire file) that will be sent.
  *
- *  	reg_segment_size: 	Size of regular segments. The last segment might have a \
- *  	size different from other regular segments. We need to know size of regular segments \
- *  	to calculate size of the last segment Read schedule_segment_size() for more info
+ *  	reg_segment_size: 	Size of regular segments. For regular segments (every \
+ *      segment before the last one), file_size == reg_segment_size. The last segment \
+ *      might have a size different from previous regular segments. We need to know size \
+ *      of regular segments to calculate the starting addr of the last segment. Read \
+ *      schedule_segment_size() for more info.
  *
  * @return
- * 	number of bytes that are actually sent.
+ * 	Number of bytes that are actually sent. Corresponding error message should be printed \
+ *      when the bytes_sent != file_size
  *
  * @todo (implementation detail, can be skipped)
- * 	1. Obtain file_size and pad the file_size so that it is divisible by page size of \
- * 	the machine. This is because mmap() can only map data with size divisible by page size.
  *
- * 	2. Using mmap(), map target segment of the file into memory. The result is \
- * 	a memory address containing the data (you can think of it as a char array)
+ * 	1. Using mmap(), map target segment of the file into memory. Calculate the starting addr \
+ *      of the segment we want to send (in case of sending an entire file, the starting addr is \
+ *      simply the return value of mmap())
  *
- * 	3. Using write(), write the data into sockfd
+ * 	2. Using write(), write the segment into sockfd
  *
- * 	4. Using munmap, unmap the data that was mapped by mmap() previously
- *  
- * 
+ * 	3. Using munmap, unmap the data that was mapped by mmap() previously
+ *
+ *
  */
 size_t send_file(char *filename, int sockfd, size_t index, size_t file_size, size_t reg_segment_size);
 
 /**
- * Read data from sockfd and write it to a new file. 
+ * Read data from sockfd and write it to a new file.
+ *
  * Similar to send_file, if file_index is 0 it means an entire file has been sent (no partition)
- * If file_index > 0, we should create a file with indexed file name. \
- * For instance: "alloc1", "alloc2"
+ *
+ *
+ * If file_index > 0, we should create a file with indexed file name. i.e. "myfile1.c", "myfile2.c"
  * This is achieved by using sprintf();
  *
  * @para
- * 	base_filename:	Name of the original file (i.e. "alloc", "server")
+ * 	base_filename:	Name of the original file (i.e. "myfile.c", "server.c")
  *
  * 	sockfd:		Same as send_file()
  *
- * 	index:	Same as send_file()
+ * 	index:	        Same as send_file()
  *
  * 	file_size: 	Same as send_file()
  *
  * @return
- * 	number of bytes actually received.
+ * 	Number of bytes actually received. Print error message accordingly
  *
  * @todo
- * 	1. Using sprintf(), create the indexed file name. Use fopen() to open/create this file
+ * 	1. Using sprintf(), create the name the segment. Use fopen() to open/create this file
  *
  * 	2. Read data from sockfd using a buffer. Write to the opened file.
  *
@@ -93,11 +97,11 @@ size_t recv_file(char *base_filename, int sockfd, size_t index, size_t file_size
   * On success, return NULL
   * On failure due to missing segments, return an array of int containing the index of the missing segments
   * This array should be freed after it is no longer of use
-  * 
-  * @para
-  * 	base_filename:	Name of the final combined file. 
   *
-  * 	segment_counts:	Total number of partition the file should have. 
+  * @para
+  * 	base_filename:	Name of the final combined file.
+  *
+  * 	segment_counts:	Total number of partition the file should have.
   *
   * 	segment_size: 	Size of the each segment.
   *
@@ -110,7 +114,7 @@ size_t recv_file(char *base_filename, int sockfd, size_t index, size_t file_size
   * 	1. Search using access() to make sure all partitions of this file exist
   *
   * 	2. Using fopen(filename, "a"), mmap(), write(), do the combination
-  * 	
+  *
   */
 int* combine_file(char *base_filename, int segment_count);
 
@@ -144,7 +148,7 @@ int* combine_file(char *base_filename, int segment_count);
   * 	1. Calculate a new file_size that is divisible by page_size
   *
   * 	2. Calculate segment_size of every segment (last segment might be larger than others)
-  * 	
+  *
   *
   */
 void schedule_segment_size (size_t *segments, size_t file_size, int segment_count);
