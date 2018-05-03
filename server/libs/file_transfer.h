@@ -7,31 +7,41 @@
 
 #include <unistd.h>
 
+// wrapper function for using stat() to get file size
 size_t get_filesize (char *filename);
 
+
+// wrapper function to write to/ read from socket into a preallocated buffer char *msg \
+// the functions handle errno == EINTER
 size_t write_to_socket(int sockfd, const char *msg, size_t msg_length);
 
 size_t read_from_socket(int sockfd, const char *msg, size_t msg_length);
+
+
 /**
- * Send a segment (or say part/ section) of the file specified by filename to sockfd.
+ * Send a segment (i.e. part/ section) of the file specified by filename to sockfd.
  *
- * file_index and file_size are provided by the Scheduling Unit (which schdules what \
- * segment of the file should be sent, and the size of the segment)
+ * file_index,  file_size, reg_segment_size are provided by the function schedule_segment_size() (which \
+ * schdules what segment of the file should be sent, and the size of the segment).
  *
  * In case no partition is required (i.e. the entire file is sent instead of a \
  * segment of it), file_index should be set to 0. In this case, file_size also \
  * represents the size of the entire file, instead of its partition's
  *
  * @para 
- *  	filename: 	Name of the file
+ *  	filename: 		Name of the file
  *
- *  	sockfd: 	Socket file descriptor
+ *  	sockfd: 		Socket file descriptor
  *
- *  	file_index:  	If it is 0, it means we are sending the entire file,\
+ *  	file_index:  		If it is 0, it means we are sending the entire file,\
  *  	not just a segment of it. Other wise, file_index should start with 1. \
  *  	It marks which segment of the file to be sent.
  *
- *  	file_size: 	Size of the file that will be sent. 
+ *  	file_size: 		Size of the segment/entire file that will be sent. 
+ *
+ *  	reg_segment_size: 	Size of regular segments. The last segment might have a \
+ *  	size different from other regular segments. We need to know size of regular segments \
+ *  	to calculate size of the last segment Read schedule_segment_size() for more info
  *
  * @return
  * 	number of bytes that are actually sent.
