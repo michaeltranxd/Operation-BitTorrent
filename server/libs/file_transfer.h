@@ -11,8 +11,7 @@
 size_t get_filesize (char *filename);
 
 
-// wrapper function to write to/ read from socket into a preallocated buffer char *msg \
-// the functions handle errno == EINTER
+// wrapper function to write to/ read from socket into a preallocated buffer char *msg. 
 size_t write_to_socket(int sockfd, const char *msg, size_t msg_length);
 
 size_t read_from_socket(int sockfd, const char *msg, size_t msg_length);
@@ -21,39 +20,27 @@ size_t read_from_socket(int sockfd, const char *msg, size_t msg_length);
 /**
  * Send a segment (i.e. part/ section) of the file specified by filename to sockfd.
  *
- * file_index,  file_size, reg_segment_size are provided by the function schedule_segment_size() (which \
- * schdules what segment of the file should be sent, and the size of the segment).
+ * file_index,  file_size, reg_segment_size are provided by the function schedule_segment_size() (which schdules what segment of the file should be sent, and the size of the segment).
  *
- * In case no partition is required (i.e. the entire file is sent instead of a \
- * segment of it), file_index should be set to 0. In this case, file_size also \
- * represents the size of the entire file, instead of its partition's
+ * In case no partition is required (i.e. the entire file is sent instead of a segment of it), file_index should be set to 0. In this case, file_size also represents the size of the entire file, instead of its partition's
  *
  * @para
  *  	filename: 		Name of the file
  *
  *  	sockfd: 		Socket file descriptor
  *
- *  	file_index:  		If it is 0, it means we are sending the entire file,\
- *  	not just a segment of it. Other wise, file_index should start with 1. \
- *  	It marks which segment of the file to be sent.
+ *  	file_index:  		If it is 0, it means we are sending the entire file, not just a segment of it. Other wise, file_index should start with 1. This para marks which segment of the file to be sent.
  *
  *  	file_size: 		Size of the data (segment/ entire file) that will be sent.
  *
- *  	reg_segment_size: 	Size of regular segments. For regular segments (every \
- *      segment before the last one), file_size == reg_segment_size. The last segment \
- *      might have a size different from previous regular segments. We need to know size \
- *      of regular segments to calculate the starting addr of the last segment. Read \
- *      schedule_segment_size() for more info.
+ *  	reg_segment_size: 	Size of regular segments. For regular segments (every segment before the last one), file_size == reg_segment_size. The last segment might have a size different from previous regular segments. We need to know size of regular segments to calculate the starting addr of the last segment. Read schedule_segment_size() for more info.
  *
  * @return
- * 	Number of bytes that are actually sent. Corresponding error message should be printed \
- *      when the bytes_sent != file_size
+ * 	Number of bytes that are actually sent. Corresponding error message should be printed when the bytes_sent != file_size
  *
  * @todo (implementation detail, can be skipped)
  *
- * 	1. Using mmap(), map target segment of the file into memory. Calculate the starting addr \
- *      of the segment we want to send (in case of sending an entire file, the starting addr is \
- *      simply the return value of mmap())
+ * 	1. Using mmap(), map target segment of the file into memory. Calculate the starting addr of the segment we want to send (in case of sending an entire file, the starting addr is simply the return value of mmap()).
  *
  * 	2. Using write(), write the segment into sockfd
  *
@@ -93,10 +80,9 @@ size_t send_file(char *filename, int sockfd, size_t index, size_t file_size, siz
 size_t recv_file(char *base_filename, int sockfd, size_t index, size_t file_size);
 
  /**
-  * Combine all parts of a file into one complete file using mmap()
+  * Combine all parts of a file(i.e. all segments) into one complete file
   * On success, return NULL
-  * On failure due to missing segments, return an array of int containing the index of the missing segments
-  * This array should be freed after it is no longer of use
+  * On failure due to missing segments, malloc() an int *missing_segments containing the index of the missing segments. Return this array. It should be freed after it is no longer of use
   *
   * @para
   * 	base_filename:	Name of the final combined file.
@@ -107,8 +93,7 @@ size_t recv_file(char *base_filename, int sockfd, size_t index, size_t file_size
   *
   * @return
   * 	On success, return NULL
-  * 	Else, return an int array of size segment_count containing index of missing segments
-  * 	This array should be freed later
+  * 	
   *
   * @todo
   * 	1. Search using access() to make sure all partitions of this file exist
@@ -121,28 +106,19 @@ int* combine_file(char *base_filename, int segment_count);
 
 
  /**
-  * Return a size_t array of segment_count elements
-  * This array is obtained by using malloc(segment_count). It should be freed later.
+  * Populate the size_t *segments with the size of each segment
   * segment[0] - segment[segment_count - 2] contains the size of each regular segment
-  * segment[segment_count - 1] contains the size of the last segment, which might be different\
-  * from other regular segments due to padding.
-  *
-  * Mmap() can only map data of size divisible by page_size. If the original file_size \
-  * is not divisible by page_size, we need to pad the original file. The actual \
-  * padding of file (using ftruncate()) is done in send_file. Here we just calculate the \
-  * segment size.
-  *
-  * For instance, if the original file_size is 10 pages, and segment_count is 3:
-  * segment[0] = segment[1] = 3 * page; segment[2] = 4 * page
+  * segment[segment_count - 1] contains the size of the last segment, which might be different from other regular segments.
   *
   * @para
+  *     segments:       A preallocated array. We shall populate it with the size of each segment
+  *     
   * 	file_size:	Size of the entire file
   *
   * 	segment_count:	How many segment this file should have
   *
   * @return
-  * 	Return an arrary containing segment_size based on given para
-  * 	This array should be freed later
+  *     
   *
   * @todo
   * 	1. Calculate a new file_size that is divisible by page_size
