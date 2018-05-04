@@ -62,3 +62,9 @@ Assuming that the tracker is online and three peers are connect. The following s
 - Mmap
 - Concurrency
 - Synchronization
+
+# Contributions
+Thank you for @sstevenshang for managing this project and guiding us.
+
+- @Wipeitquick wrote file transferring and scheduling part. Helped with protocol.
+- @michaeltranxd and @bujustin worked together on entire protocol and rest of project.
