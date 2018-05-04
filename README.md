@@ -20,18 +20,18 @@ Hello, this is Operation BitTorrent. This project is aimed to explore P2P(peer t
 - [ ] Add cleanup (signals like SIGINT)
 
 
-### Description
+# Description
 
 There are three types: PEER, TRACKER, REQUESTER. NOTE that the REQUESTER and PEER are the SAME program. Look below to see the descriptions of each type.
 
-# TRACKER
+## TRACKER
 The job of the TRACKER is to keep a list of all existing connections so it knows who is in the network and also update that list. This will be a running server that only serves as a middleman between the peers and the requester.
 
-# PEER
+## PEER
 
 The job of the PEER side is to respond to the TRACKER for file availability and sending files to REQUESTER. This is automatically handled in code so the user does not need to worry about it. 
 
-# REQUESTER
+## REQUESTER
 The job of the REQUESTER is to ask files (commanded by the user) on the network. The user is prompted by the program to type in the following:
 
 ```
